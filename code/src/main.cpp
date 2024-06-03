@@ -64,18 +64,6 @@ for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
     digitalWrite(PIN_B,b1);
     digitalWrite(PIN_C,b2);
 
-
-
-  
-    //Serial.print(" "); // DEBUG
-   // Serial.print("Reading mux 1 pin: "); // DEBUG
-    //Serial.println(buttonCount); // DEBUG
-    //Serial.print(" "); // DEBUG
-    // Serial.print("Setting Channel: "); // DEBUG
-    // Serial.print(bitRead(buttonCount,0)); // DEBUG
-    // Serial.print(bitRead(buttonCount,1)); // DEBUG
-    // Serial.print(bitRead(buttonCount,2)); // DEBUG
-    //Serial.print(" "); // DEBUG
     Serial.print("Pin: "); // DEBUG
     Serial.print(" "); // DEBUG
     Serial.print(buttonValue[buttonCount]); // DEBUG, this gets called for the second time, so...numbers are off ?
