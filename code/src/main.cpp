@@ -76,9 +76,11 @@ for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
     // Serial.print(bitRead(buttonCount,1)); // DEBUG
     // Serial.print(bitRead(buttonCount,2)); // DEBUG
     //Serial.print(" "); // DEBUG
-    Serial.print("Value: "); // DEBUG
+    Serial.print("Pin: "); // DEBUG
     Serial.print(" "); // DEBUG
     Serial.print(buttonValue[buttonCount]); // DEBUG, this gets called for the second time, so...numbers are off ?
+    Serial.print(" "); // DEBUG
+    Serial.print("Value: "); // DEBUG
     Serial.print(" "); // DEBUG
     Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG, this gets called for the second time, so...numbers are off ?
     delay(1000); // DEBUG slow down for debuging
