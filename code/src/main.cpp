@@ -44,72 +44,75 @@ void setup()
 void loop()
 {
   muxOne(); // function to loop over mux 1
-  //muxTwo(); // function to loop over mux 2
+  muxTwo(); // function to loop over mux 2
 }
 
 void muxOne() {
 
-for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
+  for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
+
+      b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
+      b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
+      b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
+
+      digitalWrite(PIN_A,b0);
+      digitalWrite(PIN_B,b1);
+      digitalWrite(PIN_C,b2);
+
+      Serial.print("Mux 1 Pin: "); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.print(buttonValue[buttonCount]); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.print("Value: "); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG
+      delay(1000); // DEBUG slow down for debuging
 
 
+      // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
+      //   // do something (send NoteOn)
+      // } 
 
+      // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
+      //   // do something (send NoteOff) 
+      //   }    
 
-    b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
-    b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
-    b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
-
-
-
-    digitalWrite(PIN_A,b0);
-    digitalWrite(PIN_B,b1);
-    digitalWrite(PIN_C,b2);
-
-    Serial.print("Pin: "); // DEBUG
-    Serial.print(" "); // DEBUG
-    Serial.print(buttonValue[buttonCount]); // DEBUG, this gets called for the second time, so...numbers are off ?
-    Serial.print(" "); // DEBUG
-    Serial.print("Value: "); // DEBUG
-    Serial.print(" "); // DEBUG
-    Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG, this gets called for the second time, so...numbers are off ?
-    delay(1000); // DEBUG slow down for debuging
-
-
-    // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
-    //   // do something (send NoteOn)
-    // } 
-
-    // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
-    //   // do something (send NoteOff) 
-    //   }    
-
-    //lastButtonValue[buttonCount] = buttonValue[buttonCount];
-    }
-  
+      //lastButtonValue[buttonCount] = buttonValue[buttonCount];
+      }
+    
   }
-  
   
 void muxTwo() {
 
-for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
-    b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
-    b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
-    b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
+  for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
 
-    digitalWrite(PIN_A,b0);
-    digitalWrite(PIN_B,b1);
-    digitalWrite(PIN_C,b2);
+      b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
+      b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
+      b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
 
-    buttonValue[buttonCount] = digitalRead(PIN_VALUE_TWO);
+      digitalWrite(PIN_A,b0);
+      digitalWrite(PIN_B,b1);
+      digitalWrite(PIN_C,b2);
+
+      Serial.print("Mux 2 Pin: "); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.print(buttonValue[buttonCount]); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.print("Value: "); // DEBUG
+      Serial.print(" "); // DEBUG
+      Serial.println(digitalRead(PIN_VALUE_TWO)); // DEBUG
+      delay(1000); // DEBUG slow down for debuging
+
+
+      // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
+      //   // do something (send NoteOn)
+      // } 
+
+      // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
+      //   // do something (send NoteOff) 
+      //   }    
+
+      //lastButtonValue[buttonCount] = buttonValue[buttonCount];
+      }
     
-    // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
-    //   // do something (send NoteOn)
-    // } 
-
-    // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
-    //   // do something (send NoteOff) 
-    //   }    
-    // lastButtonValue[buttonCount] = buttonValue[buttonCount];
-    // }
-  
   }
-}
