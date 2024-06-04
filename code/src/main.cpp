@@ -2,9 +2,25 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <OSCMessage.h>
-// TODO
-// -add debug flag
-//
+
+// Debugging switches and macros
+#define DEBUG // Comment out for no debugging messages
+
+#ifdef DEBUG
+#define DEBUG_PRINT(str)    \
+    Serial.print(millis());     \
+    Serial.print(": ");    \
+    Serial.print(__PRETTY_FUNCTION__); \
+    Serial.print(' ');      \
+    Serial.print(__FILE__);     \
+    Serial.print(':');      \
+    Serial.print(__LINE__);     \
+    Serial.print(' ');      \
+    Serial.println(str);
+#else
+#define DEBUG_PRINT(str)
+#endif
+
 
 
 // declare custom functions
@@ -44,8 +60,11 @@ void setup()
   digitalWrite(PIN_B, LOW);
   digitalWrite(PIN_C, LOW);
 
+  #ifdef DEBUG
   Serial.begin(115200);
-  Serial.println("Hello I am alive!");
+  #endif
+  
+  DEBUG_PRINT("\nHello I am alive!");
 }
 
 void loop()
@@ -62,21 +81,21 @@ void muxOne() {
       b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
       b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
 
-      digitalWrite(PIN_A,b0);
-      digitalWrite(PIN_B,b1);
-      digitalWrite(PIN_C,b2);
+      digitalWrite(PIN_A,b0); // actually set the registers
+      digitalWrite(PIN_B,b1); // actually set the registers
+      digitalWrite(PIN_C,b2); // actually set the registers
 
-      int reading = digitalRead(PIN_VALUE_ONE);
+      int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
       
       if(reading == HIGH && lastButtonStateOne == LOW && millis() - lastDebounceTimeOne > debounceDelay)
       {
         lastDebounceTimeOne = millis();
-            Serial.print("Mux 1 Pin: "); // DEBUG
-            Serial.print(buttonValue[buttonCount]); // DEBUG
-            Serial.println(" Pressed!"); // DEBUG
-            // Serial.print("Value: "); // DEBUG
-            // Serial.print(" "); // DEBUG
-            // Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG
+            DEBUG_PRINT("Mux 1 Pin: "); 
+            DEBUG_PRINT(buttonValue[buttonCount]);
+            DEBUG_PRINT("Pressed!"); 
+            // DEBUG_PRINT("Value: "); 
+            // DEBUG_PRINT(" "); 
+            // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
       }
       lastButtonStateOne = reading;
   }    
@@ -90,21 +109,21 @@ void muxTwo() {
       b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
       b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
 
-      digitalWrite(PIN_A,b0);
-      digitalWrite(PIN_B,b1);
-      digitalWrite(PIN_C,b2);
+      digitalWrite(PIN_A,b0); // actually set the registers
+      digitalWrite(PIN_B,b1); // actually set the registers
+      digitalWrite(PIN_C,b2); // actually set the registers
 
-      int reading = digitalRead(PIN_VALUE_TWO);
+      int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
       if(reading == HIGH && lastButtonStateTwo == LOW && millis() - lastDebounceTimeTwo > debounceDelay)
       {
         lastDebounceTimeTwo = millis();
-            Serial.print("Mux 2 Pin: "); // DEBUG
-            Serial.print(buttonValue[buttonCount]); // DEBUG
-            Serial.println(" Pressed!"); // DEBUG
-            // Serial.print("Value: "); // DEBUG
-            // Serial.print(" "); // DEBUG
-            // Serial.println(digitalRead(PIN_VALUE_TWO)); // DEBUG
+            DEBUG_PRINT("Mux 2 Pin: "); 
+            DEBUG_PRINT(buttonValue[buttonCount]);
+            DEBUG_PRINT("Pressed!"); 
+            // DEBUG_PRINT("Value: "); 
+            // DEBUG_PRINT(" "); 
+            // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
       }
       lastButtonStateTwo = reading;
   }
