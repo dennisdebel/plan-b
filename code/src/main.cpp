@@ -1,5 +1,7 @@
 #include "Arduino.h"
-
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <OSCMessage.h>
 // TODO
 // -add debug flag
 //
@@ -12,14 +14,19 @@ void muxTwo();
 // declare mux pins
 const int PIN_VALUE_ONE = D6; // IO read pin mux 1 (COMmon InputOutput pin)
 const int PIN_VALUE_TWO = D7; // IO read pin mux 2 (COMmon InputOutput pin)
-// const int PIN_INHIBIT_1 =  // maybe you need to connect the inhibit pins to the WEMOS as well, or atleas to ground!
-// const int PIN_INHIBIT_2 =  // maybe you need to connect the inhibit pins to the WEMOS as well, or atleas to ground!
 const int PIN_A = D1;
 const int PIN_B = D2;
 const int PIN_C = D5;
 
-int buttonValue[8] = {0,1,2,3,4,5,6,7}; // debounce (should be 8 zeros...)
-//int lastButtonValue[16] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}; // debounce
+int buttonValue[8] = {0,1,2,3,4,5,6,7}; // array/counter for pin numbers
+
+//software button debounce 
+int lastButtonStateOne = LOW;           // the previous reading from the input pin, mux one
+unsigned long lastDebounceTimeOne = 0;  // the last time the output pin was toggled, mux one
+int lastButtonStateTwo = LOW;           // the previous reading from the input pin, mux two
+unsigned long lastDebounceTimeTwo = 0;  // the last time the output pin was toggled, mux two
+unsigned long debounceDelay = 200;      // the debounce time; increase if the output flickers
+
 int b0 = 0; // channel storage
 int b1 = 0;
 int b2 = 0;
@@ -28,7 +35,7 @@ void setup()
 {
   pinMode(PIN_VALUE_ONE, INPUT);
   pinMode(PIN_VALUE_TWO, INPUT);
-  //pinMode(PIN_INH, OUTPUT); // not used as of now
+
   pinMode(PIN_A, OUTPUT);
   pinMode(PIN_B, OUTPUT);
   pinMode(PIN_C, OUTPUT);
@@ -59,28 +66,21 @@ void muxOne() {
       digitalWrite(PIN_B,b1);
       digitalWrite(PIN_C,b2);
 
-      Serial.print("Mux 1 Pin: "); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.print(buttonValue[buttonCount]); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.print("Value: "); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG
-      delay(1000); // DEBUG slow down for debuging
-
-
-      // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
-      //   // do something (send NoteOn)
-      // } 
-
-      // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
-      //   // do something (send NoteOff) 
-      //   }    
-
-      //lastButtonValue[buttonCount] = buttonValue[buttonCount];
+      int reading = digitalRead(PIN_VALUE_ONE);
+      
+      if(reading == HIGH && lastButtonStateOne == LOW && millis() - lastDebounceTimeOne > debounceDelay)
+      {
+        lastDebounceTimeOne = millis();
+            Serial.print("Mux 1 Pin: "); // DEBUG
+            Serial.print(buttonValue[buttonCount]); // DEBUG
+            Serial.println(" Pressed!"); // DEBUG
+            // Serial.print("Value: "); // DEBUG
+            // Serial.print(" "); // DEBUG
+            // Serial.println(digitalRead(PIN_VALUE_ONE)); // DEBUG
       }
-    
-  }
+      lastButtonStateOne = reading;
+  }    
+}
   
 void muxTwo() {
 
@@ -94,25 +94,18 @@ void muxTwo() {
       digitalWrite(PIN_B,b1);
       digitalWrite(PIN_C,b2);
 
-      Serial.print("Mux 2 Pin: "); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.print(buttonValue[buttonCount]); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.print("Value: "); // DEBUG
-      Serial.print(" "); // DEBUG
-      Serial.println(digitalRead(PIN_VALUE_TWO)); // DEBUG
-      delay(1000); // DEBUG slow down for debuging
+      int reading = digitalRead(PIN_VALUE_TWO);
 
-
-      // if(buttonValue[buttonCount] == LOW && lastButtonValue[buttonCount] == HIGH) {
-      //   // do something (send NoteOn)
-      // } 
-
-      // if(buttonValue[buttonCount] == HIGH && lastButtonValue[buttonCount] == LOW) {
-      //   // do something (send NoteOff) 
-      //   }    
-
-      //lastButtonValue[buttonCount] = buttonValue[buttonCount];
+      if(reading == HIGH && lastButtonStateTwo == LOW && millis() - lastDebounceTimeTwo > debounceDelay)
+      {
+        lastDebounceTimeTwo = millis();
+            Serial.print("Mux 2 Pin: "); // DEBUG
+            Serial.print(buttonValue[buttonCount]); // DEBUG
+            Serial.println(" Pressed!"); // DEBUG
+            // Serial.print("Value: "); // DEBUG
+            // Serial.print(" "); // DEBUG
+            // Serial.println(digitalRead(PIN_VALUE_TWO)); // DEBUG
       }
-    
+      lastButtonStateTwo = reading;
   }
+}
