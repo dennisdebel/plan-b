@@ -1,7 +1,15 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
-#include <OSCMessage.h>
+
+// Wifi settings
+const char* ssid = "OtaNew";
+const char* password = "1234567890";
+
+// UDP variables
+WiFiUDP Udp;
+unsigned int udpPort = 4000;  // udp port 
+byte noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
 
 // Debugging switches and macros
 #define DEBUG // Comment out for no debugging messages
@@ -20,7 +28,6 @@
 #else
 #define DEBUG_PRINT(str)
 #endif
-
 
 
 // declare custom functions
@@ -49,6 +56,24 @@ int b2 = 0;
 
 void setup()
 {
+  WiFi.begin(ssid, password);             // Connect to the network
+  DEBUG_PRINT("Connecting to ");
+  DEBUG_PRINT(ssid);
+
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
+    delay(1000);
+    DEBUG_PRINT(++i); 
+    DEBUG_PRINT(' ');
+  }
+  DEBUG_PRINT('\n');
+  DEBUG_PRINT("Connection established!");  
+  DEBUG_PRINT("WEMOS Local IP address:\t");
+  DEBUG_PRINT(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
+  Udp.begin(udpPort);
+  //DEBUG_PRINT("Now listening at IP %s, UDP port %d\n", WiFi.localIP().toString().c_str(), udpPort);
+
+
   pinMode(PIN_VALUE_ONE, INPUT);
   pinMode(PIN_VALUE_TWO, INPUT);
 
@@ -96,6 +121,11 @@ void muxOne() {
             // DEBUG_PRINT("Value: "); 
             // DEBUG_PRINT(" "); 
             // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
+            
+            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+            Udp.beginPacket("172.20.10.4", udpPort); 
+            Udp.write(noteOnBuffer,16); // send noteOn message
+            Udp.endPacket();
       }
       lastButtonStateOne = reading;
   }    
@@ -124,6 +154,11 @@ void muxTwo() {
             // DEBUG_PRINT("Value: "); 
             // DEBUG_PRINT(" "); 
             // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
+
+            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+            Udp.beginPacket("172.20.10.4", udpPort); 
+            Udp.write(noteOnBuffer,16); // send noteOn message
+            Udp.endPacket();
       }
       lastButtonStateTwo = reading;
   }
