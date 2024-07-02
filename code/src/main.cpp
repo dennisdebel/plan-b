@@ -2,14 +2,18 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-// Wifi settings
+// Wifi settings (TODO: code does not run without wifi...make option swtich for debuggen)
 const char* ssid = "OtaNew";
 const char* password = "1234567890";
 
 // UDP variables
 WiFiUDP Udp;
+const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
-byte noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
+
+uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
+//byte noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
+
 
 // Debugging switches and macros
 #define DEBUG // Comment out for no debugging messages
@@ -92,12 +96,22 @@ void setup()
   DEBUG_PRINT("\nHello I am alive!");
 }
 
+//---------------------------------------------------  Main loop -----------------------------------------------------------
 void loop()
 {
   muxOne(); // function to loop over mux 1
   muxTwo(); // function to loop over mux 2
 }
 
+
+//---------------------------------------------------  Helper functions ----------------------------------------------------
+void printHex(uint8_t num) { //print hex values
+  char hexCar[3];
+  sprintf(hexCar, "%02X", num);
+  Serial.print(hexCar);
+}
+
+//--------------------------------------------------- Reading the muxes ---------------------------------------------------
 void muxOne() {
 
   for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
@@ -115,17 +129,22 @@ void muxOne() {
       if(reading == HIGH && lastButtonStateOne == LOW && millis() - lastDebounceTimeOne > debounceDelay)
       {
         lastDebounceTimeOne = millis();
-            DEBUG_PRINT("Mux 1 Pin: "); 
-            DEBUG_PRINT(buttonValue[buttonCount]);
-            DEBUG_PRINT("Pressed!"); 
-            // DEBUG_PRINT("Value: "); 
-            // DEBUG_PRINT(" "); 
-            // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
-            
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket("172.20.10.4", udpPort); 
-            Udp.write(noteOnBuffer,16); // send noteOn message
-            Udp.endPacket();
+        noteOnBuffer[14]= buttonValue[buttonCount]+36; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+
+        DEBUG_PRINT("Mux 1 Pin: "); 
+        DEBUG_PRINT(buttonValue[buttonCount]+36); // add offset for notes lol...dirty..but why not?
+        DEBUG_PRINT("Pressed!"); 
+        DEBUG_PRINT("Packet send: "); 
+        
+        for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
+          printHex(noteOnBuffer[i]);
+        }
+        DEBUG_PRINT(" "); 
+
+        // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+        Udp.beginPacket(udpIP, udpPort); 
+        Udp.write(noteOnBuffer,16); // send noteOn message
+        Udp.endPacket();
       }
       lastButtonStateOne = reading;
   }    
@@ -148,18 +167,25 @@ void muxTwo() {
       if(reading == HIGH && lastButtonStateTwo == LOW && millis() - lastDebounceTimeTwo > debounceDelay)
       {
         lastDebounceTimeTwo = millis();
-            DEBUG_PRINT("Mux 2 Pin: "); 
-            DEBUG_PRINT(buttonValue[buttonCount]);
-            DEBUG_PRINT("Pressed!"); 
-            // DEBUG_PRINT("Value: "); 
-            // DEBUG_PRINT(" "); 
-            // DEBUG_PRINT(digitalRead(PIN_VALUE_ONE)); 
+        noteOnBuffer[14]= buttonValue[buttonCount]+44; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
 
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket("172.20.10.4", udpPort); 
-            Udp.write(noteOnBuffer,16); // send noteOn message
-            Udp.endPacket();
+        DEBUG_PRINT("Mux 2 Pin: "); 
+        DEBUG_PRINT(buttonValue[buttonCount]+44); // add offset for notes lol...dirty..but why not?
+        DEBUG_PRINT("Pressed!"); 
+        DEBUG_PRINT("Packet send: "); 
+        
+        for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
+          printHex(noteOnBuffer[i]);
+        }
+        DEBUG_PRINT(" "); 
+        
+        // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+        Udp.beginPacket(udpIP, udpPort); 
+        Udp.write(noteOnBuffer,16); // send noteOn message
+        Udp.endPacket();
       }
+      
       lastButtonStateTwo = reading;
   }
 }
+
