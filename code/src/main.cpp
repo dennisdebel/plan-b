@@ -155,6 +155,7 @@ void muxOne() {
       
       if(reading == HIGH && muxOneButtonPressedFlag == 1) // while the button is held down send noteOff message
       { 
+        DEBUG_PRINT("Sending note OFF"); 
         // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
         Udp.beginPacket(udpIP, udpPort); 
         Udp.write(noteOffBuffer,16); // send noteOff message
@@ -205,6 +206,7 @@ void muxTwo() {
       }
       if(reading == HIGH && muxTwoButtonPressedFlag == 1) // while the button is held down send noteOff message
       { 
+         DEBUG_PRINT("Send note OFF"); 
         // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
         Udp.beginPacket(udpIP, udpPort); 
         Udp.write(noteOffBuffer,16); // send noteOff message
