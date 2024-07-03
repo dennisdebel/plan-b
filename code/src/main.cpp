@@ -12,7 +12,7 @@ const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
 
 uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
-//byte noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
+uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
 
 
 // Debugging switches and macros
@@ -37,6 +37,7 @@ uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C
 // declare custom functions
 void muxOne(); 
 void muxTwo(); 
+void printHex();
 
 // declare mux pins
 const int PIN_VALUE_ONE = D6; // IO read pin mux 1 (COMmon InputOutput pin)
@@ -48,11 +49,13 @@ const int PIN_C = D5;
 int buttonValue[8] = {0,1,2,3,4,5,6,7}; // array/counter for pin numbers
 
 //software button debounce 
+bool muxOneButtonPressedFlag = 0;       // flag to check if a button is pressed/held down 
+bool muxTwoButtonPressedFlag = 0;       // flag to check if a button is pressed/held down 
 int lastButtonStateOne = LOW;           // the previous reading from the input pin, mux one
 unsigned long lastDebounceTimeOne = 0;  // the last time the output pin was toggled, mux one
 int lastButtonStateTwo = LOW;           // the previous reading from the input pin, mux two
 unsigned long lastDebounceTimeTwo = 0;  // the last time the output pin was toggled, mux two
-unsigned long debounceDelay = 200;      // the debounce time; increase if the output flickers
+unsigned long debounceDelay = 200;      // the debounce time; increase if you get double presses, or place a 100nF capacitor (or larger) from the input pin to ground. Note that this requires a 10K (or larger) resistance in series with the button circuit in order for the capacitor to charge/discharge.
 
 int b0 = 0; // channel storage
 int b1 = 0;
@@ -126,16 +129,19 @@ void muxOne() {
 
       int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
       
-      if(reading == HIGH && lastButtonStateOne == LOW && millis() - lastDebounceTimeOne > debounceDelay)
+      if(reading == HIGH && lastButtonStateOne == LOW && millis() - lastDebounceTimeOne > debounceDelay && muxOneButtonPressedFlag == 0)
       {
-        lastDebounceTimeOne = millis();
-        noteOnBuffer[14]= buttonValue[buttonCount]+36; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+        muxOneButtonPressedFlag = 1;
+        lastDebounceTimeOne = millis(); //start timer
+        int noteMuxOne = buttonValue[buttonCount]+36; // offset button count to represent note numbers
+        noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+        noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
 
         DEBUG_PRINT("Mux 1 Pin: "); 
-        DEBUG_PRINT(buttonValue[buttonCount]+36); // add offset for notes lol...dirty..but why not?
+        DEBUG_PRINT(buttonValue[buttonCount]); // add offset for notes lol...dirty..but why not?
         DEBUG_PRINT("Pressed!"); 
         DEBUG_PRINT("Packet send: "); 
-        
+        DEBUG_PRINT(" "); 
         for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
           printHex(noteOnBuffer[i]);
         }
@@ -146,13 +152,23 @@ void muxOne() {
         Udp.write(noteOnBuffer,16); // send noteOn message
         Udp.endPacket();
       }
-      lastButtonStateOne = reading;
+      
+      if(reading == HIGH && muxOneButtonPressedFlag == 1) // while the button is held down send noteOff message
+      { 
+        // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+        Udp.beginPacket(udpIP, udpPort); 
+        Udp.write(noteOffBuffer,16); // send noteOff message
+        Udp.endPacket();
+        lastButtonStateOne = reading;
+        muxOneButtonPressedFlag = 0; // reset button pressed flag
+      }
   }    
 }
   
 void muxTwo() {
 
-  for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
+  for (int buttonCount = 0; buttonCount < 8; buttonCount++) 
+  {
 
       b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
       b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
@@ -164,16 +180,19 @@ void muxTwo() {
 
       int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
-      if(reading == HIGH && lastButtonStateTwo == LOW && millis() - lastDebounceTimeTwo > debounceDelay)
+      if(reading == HIGH && lastButtonStateTwo == LOW && millis() - lastDebounceTimeTwo > debounceDelay && muxTwoButtonPressedFlag == 0)
       {
+        muxTwoButtonPressedFlag = 1;
         lastDebounceTimeTwo = millis();
-        noteOnBuffer[14]= buttonValue[buttonCount]+44; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+        int noteMuxTwo = buttonValue[buttonCount]+44; // offset button count to represent note numbers
+        noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+        noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
 
         DEBUG_PRINT("Mux 2 Pin: "); 
-        DEBUG_PRINT(buttonValue[buttonCount]+44); // add offset for notes lol...dirty..but why not?
+        DEBUG_PRINT(buttonValue[buttonCount]); // add offset for notes lol...dirty..but why not?
         DEBUG_PRINT("Pressed!"); 
         DEBUG_PRINT("Packet send: "); 
-        
+        DEBUG_PRINT(" "); 
         for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
           printHex(noteOnBuffer[i]);
         }
@@ -184,8 +203,15 @@ void muxTwo() {
         Udp.write(noteOnBuffer,16); // send noteOn message
         Udp.endPacket();
       }
-      
-      lastButtonStateTwo = reading;
+      if(reading == HIGH && muxTwoButtonPressedFlag == 1) // while the button is held down send noteOff message
+      { 
+        // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+        Udp.beginPacket(udpIP, udpPort); 
+        Udp.write(noteOffBuffer,16); // send noteOff message
+        Udp.endPacket();
+        lastButtonStateOne = reading;
+        muxTwoButtonPressedFlag = 0; // reset button pressed flag
+      }
   }
 }
 
