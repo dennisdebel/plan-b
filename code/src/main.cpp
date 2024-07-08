@@ -15,8 +15,14 @@ WiFiUDP Udp;
 const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
 
+// MIDI settings
+int noteOnChannel  = 144;
+int noteOffChannel = 128;
+
+// Packet buffer
 uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
 uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
+
 
 #ifdef DEBUG
 #define DEBUG_PRINT(str)    \
@@ -142,10 +148,11 @@ void muxOne() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      // TODO make lookup table
-      int noteMuxOne = buttonValue[buttonCount]+36; // offset button count to represent note numbers
+      int noteMuxOne = buttonValue[buttonCount]+36; // offset button count to represent note numbers, TODO make more flexible (lookuptable)
       noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
       noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
+      noteOnBuffer[15]  = noteOnChannel; // Set the Note on + Channel
+      noteOffBuffer[15] = noteOffChannel; // Set the Note off + Channel
 
       int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
 
@@ -200,10 +207,11 @@ void muxTwo() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      // TODO make lookup table
-      int noteMuxTwo = buttonValue[buttonCount]+44; // offset button count to represent note numbers
+      int noteMuxTwo = buttonValue[buttonCount]+44; // offset button count to represent note numbers, TODO make more flexible (lookuptable)
       noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
       noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
+      noteOnBuffer[15]  = noteOnChannel; // Set the Note on + Channel
+      noteOffBuffer[15] = noteOffChannel; // Set the Note off + Channel
 
       int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
