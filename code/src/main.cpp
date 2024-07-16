@@ -15,14 +15,52 @@ WiFiUDP Udp;
 const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
 
+// Button config (user variables)
+int buttonConfig[16][3] = {
+  {/* BUTTON NUMBER */ 0,  /* NOTE NUMBER */ 36, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 1,  /* NOTE NUMBER */ 37, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 2,  /* NOTE NUMBER */ 38, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 3,  /* NOTE NUMBER */ 39, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 4,  /* NOTE NUMBER */ 40, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 5,  /* NOTE NUMBER */ 41, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 6,  /* NOTE NUMBER */ 42, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 7,  /* NOTE NUMBER */ 43, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 8,  /* NOTE NUMBER */ 44, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 9,  /* NOTE NUMBER */ 45, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 10, /* NOTE NUMBER */ 46, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 11, /* NOTE NUMBER */ 47, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 12, /* NOTE NUMBER */ 48, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 13, /* NOTE NUMBER */ 49, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 14, /* NOTE NUMBER */ 50, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 15, /* NOTE NUMBER */ 51, /* CHANNEL NUMBER */ 0 },
+};
+
+int channelLUT[16][2] = { // noteOff/noteOn Channel look up table. Format: [0][0] = noteOff channel 1, [0][1] noteOn channel 1
+  {128,144},
+  {129,145},
+  {130,146},
+  {131,147},
+  {132,148},
+  {133,149},
+  {134,150},
+  {135,151},
+  {136,152},
+  {137,153},
+  {138,154},
+  {139,155},
+  {140,156},
+  {141,157},
+  {142,158},
+  {143,159},
+};
+
 // MIDI settings
-int noteOnChannel  = 144;
-int noteOffChannel = 128;
+int noteOnChannel  = 144; //channel 0 noteon
+int noteOffChannel = 128; //channel 0 noteoff
 
 // Packet buffer
 uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
 uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
-
 
 #ifdef DEBUG
 #define DEBUG_PRINT(str)    \
@@ -40,10 +78,10 @@ uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2
 #endif
 
 // declare custom functions
+void muxOneTest();
 void muxOne(); 
 void muxTwo(); 
 void printHex();
-
 
 // declare mux pins
 const int PIN_VALUE_ONE = D6; // IO read pin mux 1 (COMmon InputOutput pin)
@@ -57,7 +95,7 @@ int mux0ne_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1};
 int mux0ne_currentState[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int muxTwo_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1};
 int muxTwo_currentState[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-int buttonValue[8] = {0,1,2,3,4,5,6,7}; // array/counter for pin numbers
+int buttonValue[8] = {0,1,2,3,4,5,6,7}; // array/counter for pin numbers // TODO remove this
 
 // TODO currently no debounce
 int lastButtonStateOne = LOW;           // the previous reading from the input pin, mux one
@@ -73,9 +111,10 @@ int b2 = 0;
 void setup()
 {
 
-
   // debugging LED 
-  pinMode(LED_BUILTIN, OUTPUT);
+  #ifdef DEBUG
+    pinMode(LED_BUILTIN, OUTPUT);
+  #endif
 
   #ifdef WIFI
     WiFi.begin(ssid, password);             // Connect to the network
@@ -114,14 +153,44 @@ void setup()
   DEBUG_PRINT("\nHello I am alive!");
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH); // turn off debug LED at start of code
+
+
+  //   int baseNoteOn = 108;
+  // int baseNoteOff = 92;
+  // for(int i=0;i<256;i++){
+  //   Serial.print("{");   
+  //   Serial.print(i);
+  //   Serial.print(",");
+  //   Serial.print(i+baseNoteOn);  
+  //   Serial.println("},");  
+  //   Serial.print("{"); 
+  //   Serial.print(i);
+  //   Serial.print(",");
+  //   Serial.print(i+baseNoteOff); 
+  //   Serial.println("}");
+  // };
 }
 
 
 //---------------------------------------------------  Main loop -----------------------------------------------------------
 void loop()
 {
-  muxOne(); // function to loop over mux 1
-  muxTwo(); // function to loop over mux 2
+
+
+// int buttonConfig[16][3] = {
+// {/* BUTTON NUMBER */ 0, /* NOTE NUMBER */ 36, /* CHANNEL NUMBER */ 0 },
+// };
+// Serial.print("Note number: ");
+// Serial.print(buttonConfig[0][1]); //TODO in mux loop buttonConfig[ COUNTER 0-15 ][1]);
+// Serial.print(" , Note ON: ");
+// Serial.print(channelLUT[buttonConfig[0][1]-36][1]); //substract base number of 36....
+// Serial.print(" , Note OFF: ");
+// Serial.println(channelLUT[buttonConfig[0][1]-36][0]); //substract base number of 36....
+// delay(100);
+  
+
+  muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
+  muxTwo(); // function to loop over mux 2 TODO mux must buttonvlaue count 8 < 16
 }
 
 //---------------------------------------------------  Helper functions ----------------------------------------------------
@@ -148,11 +217,11 @@ void muxOne() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxOne = buttonValue[buttonCount]+36; // offset button count to represent note numbers, TODO make more flexible (lookuptable)
-      noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+      int noteMuxOne = buttonConfig[buttonCount][1]; // Look up the note numer
+      noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
-      noteOnBuffer[15]  = noteOnChannel; // Set the Note on + Channel
-      noteOffBuffer[15] = noteOffChannel; // Set the Note off + Channel
+      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][1]-36][1]; // Set the Note on + Channel
+      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][1]-36][0]; // Set the Note off + Channel
 
       int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
 
@@ -174,7 +243,8 @@ void muxOne() {
         if (reading == HIGH && mux0ne_lastState[buttonCount] == 1)  {
             // reset the button low flag
             mux0ne_lastState[buttonCount] = 0;
-            DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
+            DEBUG_PRINT("Button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("Pressed");
+            DEBUG_PRINT("Note:"); DEBUG_PRINT(noteMuxOne); DEBUG_PRINT("send!");  
             // Send noteOn here:
             DEBUG_PRINT("Packet send: "); 
             for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
@@ -188,13 +258,70 @@ void muxOne() {
               digitalWrite(LED_BUILTIN, LOW); // debug LED
             #endif
         }
-    
   }    
 }
+
+// void muxOne() {
+
+//   for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
+//       #ifdef DEBUG
+//         delay(20); // debug delay for readability
+//       #endif
+
+//       b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
+//       b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
+//       b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
+
+//       digitalWrite(PIN_A,b0); // actually set the registers
+//       digitalWrite(PIN_B,b1); // actually set the registers
+//       digitalWrite(PIN_C,b2); // actually set the registers
+
+//       int noteMuxOne = buttonValue[buttonCount]+36; // offset button count to represent note numbers, TODO make more flexible (lookuptable)
+//       noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+//       noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
+//       noteOnBuffer[15]  = noteOnChannel; // Set the Note on + Channel
+//       noteOffBuffer[15] = noteOffChannel; // Set the Note off + Channel
+
+//       int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
+
+//       // read the state of the pushbutton and set a flag if it is low:
+//         if (reading == LOW && mux0ne_lastState[buttonCount] == 0)  {
+//             mux0ne_lastState[buttonCount] = 1;
+//             mux0ne_currentState[buttonCount] = 1;
+//             DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
+//             //Send noteOff here
+//             DEBUG_PRINT("Send note OFF"); 
+//             // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+//             Udp.beginPacket(udpIP, udpPort); 
+//             Udp.write(noteOffBuffer,16); // send noteOff message
+//             Udp.endPacket();
+//             digitalWrite(LED_BUILTIN, HIGH); // debug LED
+//         }
+
+//         // This if statement will only fire on the rising edge of the button input
+//         if (reading == HIGH && mux0ne_lastState[buttonCount] == 1)  {
+//             // reset the button low flag
+//             mux0ne_lastState[buttonCount] = 0;
+//             DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
+//             // Send noteOn here:
+//             DEBUG_PRINT("Packet send: "); 
+//             for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
+//               printHex(noteOnBuffer[i]);
+//             }
+//             // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
+//             Udp.beginPacket(udpIP, udpPort); 
+//             Udp.write(noteOnBuffer,16); // send noteOn message
+//             Udp.endPacket();
+//             #ifdef DEBUG
+//               digitalWrite(LED_BUILTIN, LOW); // debug LED
+//             #endif
+//         }
+//   }    
+// }
   
 void muxTwo() {
 
-   for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
+   for (int buttonCount = 7; buttonCount < 15; buttonCount++) {
       #ifdef DEBUG
         delay(20); // debug delay for readability
       #endif
@@ -207,11 +334,11 @@ void muxTwo() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxTwo = buttonValue[buttonCount]+44; // offset button count to represent note numbers, TODO make more flexible (lookuptable)
-      noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button TODO: add note off
+      int noteMuxTwo = buttonConfig[buttonCount][1]; // Look up the note numer
+      noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
-      noteOnBuffer[15]  = noteOnChannel; // Set the Note on + Channel
-      noteOffBuffer[15] = noteOffChannel; // Set the Note off + Channel
+      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][1]-36][1]; // Set the Note on + Channel
+      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][1]-36][0]; // Set the Note off + Channel
 
       int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
@@ -247,7 +374,6 @@ void muxTwo() {
               digitalWrite(LED_BUILTIN, LOW); // debug LED
             #endif
         }
-    
   }    
 }
 
