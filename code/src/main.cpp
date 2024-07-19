@@ -17,26 +17,27 @@ unsigned int udpPort = 4000;  // udp port
 
 // Button config (user variables)
 int buttonConfig[16][3] = {
-  {/* BUTTON NUMBER */ 0,  /* NOTE NUMBER */ 36, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 1,  /* NOTE NUMBER */ 37, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 2,  /* NOTE NUMBER */ 38, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 3,  /* NOTE NUMBER */ 39, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 4,  /* NOTE NUMBER */ 40, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 5,  /* NOTE NUMBER */ 41, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 6,  /* NOTE NUMBER */ 42, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 7,  /* NOTE NUMBER */ 43, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 8,  /* NOTE NUMBER */ 44, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 9,  /* NOTE NUMBER */ 45, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 10, /* NOTE NUMBER */ 46, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 11, /* NOTE NUMBER */ 47, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 12, /* NOTE NUMBER */ 48, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 13, /* NOTE NUMBER */ 49, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 14, /* NOTE NUMBER */ 50, /* CHANNEL NUMBER */ 0 },
-  {/* BUTTON NUMBER */ 15, /* NOTE NUMBER */ 51, /* CHANNEL NUMBER */ 0 },
+  {/* BUTTON NUMBER */ 0,  /* NOTE NUMBER */ 36, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 1,  /* NOTE NUMBER */ 37, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 2,  /* NOTE NUMBER */ 38, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 3,  /* NOTE NUMBER */ 39, /* CHANNEL NUMBER */ 3 },
+  {/* BUTTON NUMBER */ 4,  /* NOTE NUMBER */ 40, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 5,  /* NOTE NUMBER */ 41, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 6,  /* NOTE NUMBER */ 42, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 7,  /* NOTE NUMBER */ 43, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 8,  /* NOTE NUMBER */ 44, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 9,  /* NOTE NUMBER */ 45, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 10, /* NOTE NUMBER */ 46, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 11, /* NOTE NUMBER */ 47, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 12, /* NOTE NUMBER */ 48, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 13, /* NOTE NUMBER */ 49, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 14, /* NOTE NUMBER */ 50, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 15, /* NOTE NUMBER */ 51, /* CHANNEL NUMBER */ 1 },
 };
 
-int channelLUT[16][2] = { // noteOff/noteOn Channel look up table. Format: [0][0] = noteOff channel 1, [0][1] noteOn channel 1
-  {128,144},
+int channelLUT[17][2] = { // noteOff/noteOn Channel look up table. Format: [0][0] = noteOff channel 1, [0][1] noteOn channel 1
+  {0,0},      // bogus entry to subtly offset the look up table by one, since there is no midi channel 0
+  {128,144},  // Midi Channel 1 Note Off, Note On
   {129,145},
   {130,146},
   {131,147},
@@ -217,11 +218,11 @@ void muxOne() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxOne = buttonConfig[buttonCount][1]; // Look up the note numer
-      noteOnBuffer[14]= noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
+      int noteMuxOne = buttonConfig[buttonCount][1]; // Look up the note number
+      noteOnBuffer[14] = noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
       noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][1]-36][1]; // Set the Note on + Channel
-      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][1]-36][0]; // Set the Note off + Channel
+      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][2]][0]; // Set the Note off + Channel   
 
       int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
 
@@ -231,6 +232,10 @@ void muxOne() {
             mux0ne_currentState[buttonCount] = 1;
             DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
             //Send noteOff here
+            DEBUG_PRINT("Midi Note:"); 
+            DEBUG_PRINT(noteOffBuffer[14]); 
+            DEBUG_PRINT("Channel:"); 
+            DEBUG_PRINT(noteOffBuffer[15]); 
             DEBUG_PRINT("Send note OFF"); 
             // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
             Udp.beginPacket(udpIP, udpPort); 
@@ -320,8 +325,7 @@ void muxOne() {
 // }
   
 void muxTwo() {
-
-   for (int buttonCount = 7; buttonCount < 15; buttonCount++) {
+   for (int buttonCount = 0; buttonCount < 8; buttonCount++) {  //   for (int buttonCount = 7; buttonCount < 15; buttonCount++) {
       #ifdef DEBUG
         delay(20); // debug delay for readability
       #endif
@@ -334,11 +338,12 @@ void muxTwo() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxTwo = buttonConfig[buttonCount][1]; // Look up the note numer
+      int noteMuxTwo = buttonConfig[buttonCount+7][1]; // Look up the note number
       noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
-      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][1]-36][1]; // Set the Note on + Channel
-      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][1]-36][0]; // Set the Note off + Channel
+      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount+7][1]-36][1]; // Set the Note on + Channel
+      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount+7][2]][0]; // Set the Note off + Channel   // channelLUT[buttonConfig[note][2]][0]
+
 
       int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
@@ -348,6 +353,10 @@ void muxTwo() {
             muxTwo_currentState[buttonCount] = 1;
             DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
             //Send noteOff here
+            DEBUG_PRINT("Midi Note:"); 
+            DEBUG_PRINT(noteOffBuffer[14]); 
+            DEBUG_PRINT("Channel:"); 
+            DEBUG_PRINT(noteOffBuffer[15]); 
             DEBUG_PRINT("Send note OFF"); 
             // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
             Udp.beginPacket(udpIP, udpPort); 
