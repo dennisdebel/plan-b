@@ -264,12 +264,11 @@ void muxTwo() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxTwo = buttonConfig[buttonCount+7][1]; // Look up the note number
+      int noteMuxTwo = buttonConfig[buttonCount+8][1]; // Look up the note number
       noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
       noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount+7][2]][1]; // Set the Note on + Channel
       noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount+7][2]][0]; // Set the Note off + Channel   // channelLUT[buttonConfig[note][2]][0]
-
 
       int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
 
