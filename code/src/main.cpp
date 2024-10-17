@@ -83,6 +83,13 @@ void muxOneTest();
 void muxOne(); 
 void muxTwo(); 
 void printHex();
+void moveSteppers();
+
+// declare stepper motor pins
+// const int 
+// const int 
+// const int 
+// const int 
 
 // declare mux pins
 const int PIN_VALUE_ONE = D6; // IO read pin mux 1 (COMmon InputOutput pin)
