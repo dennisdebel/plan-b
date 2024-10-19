@@ -1,19 +1,30 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <AccelStepper.h>
 
-// Debugging switches and macros
-#define DEBUG // Comment out for no debugging messages
-//#define WIFI // enable wifi or not
 
-// Wifi settings 
+// Wifi definitions 
 const char* ssid = "OtaNew";
 const char* password = "1234567890";
+//#define WIFI // uncomment to enable wifi, comment to disable wifi
 
-// UDP variables
+// UDP definitions
 WiFiUDP Udp;
 const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
+
+// Stepper definitions
+#define HALFSTEP 8
+
+// Stepper pin definitions
+#define motorPin1  D5     // IN1 on the ULN2003 driver 1
+#define motorPin2  D6     // IN2 on the ULN2003 driver 1
+#define motorPin3  D8     // IN3 on the ULN2003 driver 1
+#define motorPin4  D7     // IN4 on the ULN2003 driver 1
+
+// Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
+AccelStepper stepper(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 // Button config (user variables)  
 int buttonConfig[16][3] = {
@@ -55,48 +66,29 @@ int channelLUT[17][2] = { // noteOff/noteOn Channel look up table. Format: [0][0
   {143,159},
 };
 
-// MIDI settings
+// MIDI definitions
 int noteOnChannel  = 144; //channel 0 noteon
 int noteOffChannel = 128; //channel 0 noteoff
 
-// Packet buffer
+// Packet buffer definitions
 uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
 uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
 
-#ifdef DEBUG
-#define DEBUG_PRINT(str)    \
-    Serial.print(millis());     \
-    Serial.print(": ");    \
-    Serial.print(__PRETTY_FUNCTION__); \
-    Serial.print(' ');      \
-    Serial.print(__FILE__);     \
-    Serial.print(':');      \
-    Serial.print(__LINE__);     \
-    Serial.print(' ');      \
-    Serial.println(str);
-#else
-#define DEBUG_PRINT(str)
-#endif
-
-// declare custom functions
+// Custom functions definitions
 void muxOneTest();
 void muxOne(); 
 void muxTwo(); 
 void printHex();
-void moveSteppers();
+//void moveSteppers();
 
-// declare stepper motor pins
-// const int 
-// const int 
-// const int 
-// const int 
+
 
 // declare mux pins
-const int PIN_VALUE_ONE = D6; // IO read pin mux 1 (COMmon InputOutput pin)
-const int PIN_VALUE_TWO = D7; // IO read pin mux 2 (COMmon InputOutput pin)
-const int PIN_A = D1;
-const int PIN_B = D2;
-const int PIN_C = D5;
+const int PIN_VALUE_ONE = D1; // IO read pin mux 1 (COMmon InputOutput pin) // TODO change to..
+const int PIN_VALUE_TWO = D2; // IO read pin mux 2 (COMmon InputOutput pin) // TODO change to..
+const int PIN_A = D0;
+const int PIN_B = D4;
+const int PIN_C = D3;                                                       // TODO change to..
 
 // declare button states
 int mux0ne_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1};
@@ -118,12 +110,6 @@ int b2 = 0;
 
 void setup()
 {
-
-  // debugging LED 
-  #ifdef DEBUG
-    pinMode(LED_BUILTIN, OUTPUT);
-  #endif
-
   #ifdef WIFI
     WiFi.begin(ssid, password);             // Connect to the network
     DEBUG_PRINT("Connecting to ");
@@ -139,10 +125,11 @@ void setup()
     DEBUG_PRINT("Connection established!");  
     DEBUG_PRINT("WEMOS Local IP address:\t");
     DEBUG_PRINT(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
+  
   #endif
   Udp.begin(udpPort);
-  //DEBUG_PRINT("Now listening at IP %s, UDP port %d\n", WiFi.localIP().toString().c_str(), udpPort);
 
+  // Mux pin settings
   pinMode(PIN_VALUE_ONE, INPUT);
   pinMode(PIN_VALUE_TWO, INPUT);
 
@@ -154,19 +141,34 @@ void setup()
   digitalWrite(PIN_B, LOW);
   digitalWrite(PIN_C, LOW);
 
-  #ifdef DEBUG
+  // Start serial
   Serial.begin(115200);
-  #endif
-  
-  DEBUG_PRINT("\nHello I am alive!");
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH); // turn off debug LED at start of code
+
+  // Stepper motor settings
+  stepper.setMaxSpeed(1000.0);
+  stepper.setAcceleration(50.0);
+  stepper.setSpeed(200);
+  /* 2048 == 1/2 rotation of the axis.
+   * 64 steps per full rotation for the motor, to be multiplied by 64
+   * (the reducing factor of the complete motor) --> 64 * 64 = 4096 steps per rotation
+   * 
+   * At boot, the motor will turn 1/2 rotation clockwise, then 1 turn anti-clockwise.
+   */
+  stepper.moveTo(2048);
+    Serial.println("this is setup");
 }
 
-
-//---------------------------------------------------  Main loop -----------------------------------------------------------
 void loop()
 {
+  //Change direction when the stepper reaches the target position
+  if (stepper.distanceToGo() == 0) {
+    stepper.moveTo(-stepper.currentPosition());
+
+     Serial.println("now is loop");
+  }
+  stepper.run();
+ 
+
   muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
   muxTwo(); // function to loop over mux 2 TODO mux must buttonvlaue count 8 < 16
 }
@@ -208,15 +210,15 @@ void muxOne() {
             mux0ne_lastState[buttonCount] = 1;
             mux0ne_currentState[buttonCount] = 1;
             //Send noteOff here
-            DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
-            DEBUG_PRINT("Midi Note:"); 
-            DEBUG_PRINT(noteOffBuffer[14]); 
-            DEBUG_PRINT("Note Off Channel (HEX):"); 
-            DEBUG_PRINT(noteOffBuffer[15]); 
-            DEBUG_PRINT("Channel (DEC):"); 
-            DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            DEBUG_PRINT("Send note OFF"); 
-            DEBUG_PRINT("Packet send: "); 
+            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
+            // DEBUG_PRINT("Midi Note:"); 
+            // DEBUG_PRINT(noteOffBuffer[14]); 
+            // DEBUG_PRINT("Note Off Channel (HEX):"); 
+            // DEBUG_PRINT(noteOffBuffer[15]); 
+            // DEBUG_PRINT("Channel (DEC):"); 
+            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
+            // DEBUG_PRINT("Send note OFF"); 
+            // DEBUG_PRINT("Packet send: "); 
             for(int i=0; i<sizeof(noteOffBuffer); i++){ //debug the note on message
               printHex(noteOffBuffer[i]);Serial.print(" ");
             }
@@ -233,15 +235,15 @@ void muxOne() {
             // reset the button low flag
             mux0ne_lastState[buttonCount] = 0;
             // Send noteOn here:
-            DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
-            DEBUG_PRINT("Midi Note:"); 
-            DEBUG_PRINT(noteOnBuffer[14]); 
-            DEBUG_PRINT("Note On Channel (HEX):"); 
-            DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
-            DEBUG_PRINT("Channel (DEC):"); 
-            DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            DEBUG_PRINT("Send note ON"); 
-            DEBUG_PRINT("Packet send: "); 
+            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
+            // DEBUG_PRINT("Midi Note:"); 
+            // DEBUG_PRINT(noteOnBuffer[14]); 
+            // DEBUG_PRINT("Note On Channel (HEX):"); 
+            // DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
+            // DEBUG_PRINT("Channel (DEC):"); 
+            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
+            // DEBUG_PRINT("Send note ON"); 
+            // DEBUG_PRINT("Packet send: "); 
             for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
               printHex(noteOnBuffer[i]);Serial.print(" ");
             }
@@ -284,15 +286,15 @@ void muxTwo() {
             muxTwo_lastState[buttonCount] = 1;
             muxTwo_currentState[buttonCount] = 1;
           //Send noteOff here
-            DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
-            DEBUG_PRINT("Midi Note:"); 
-            DEBUG_PRINT(noteOffBuffer[14]); 
-            DEBUG_PRINT("Note Off Channel (HEX):"); 
-            DEBUG_PRINT(noteOffBuffer[15]); 
-            DEBUG_PRINT("Channel (DEC):"); 
-            DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            DEBUG_PRINT("Send note OFF"); 
-            DEBUG_PRINT("Packet send: "); 
+            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
+            // DEBUG_PRINT("Midi Note:"); 
+            // DEBUG_PRINT(noteOffBuffer[14]); 
+            // DEBUG_PRINT("Note Off Channel (HEX):"); 
+            // DEBUG_PRINT(noteOffBuffer[15]); 
+            // DEBUG_PRINT("Channel (DEC):"); 
+            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
+            // DEBUG_PRINT("Send note OFF"); 
+            // DEBUG_PRINT("Packet send: "); 
             for(int i=0; i<sizeof(noteOffBuffer); i++){ //debug the note on message
               printHex(noteOffBuffer[i]);Serial.print(" ");
             }
@@ -309,15 +311,15 @@ void muxTwo() {
             // reset the button low flag
             muxTwo_lastState[buttonCount] = 0;
             // Send noteOn here:
-            DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
-            DEBUG_PRINT("Midi Note:"); 
-            DEBUG_PRINT(noteOnBuffer[14]); 
-            DEBUG_PRINT("Note On Channel (HEX):"); 
-            DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
-            DEBUG_PRINT("Channel (DEC):"); 
-            DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            DEBUG_PRINT("Send note ON"); 
-            DEBUG_PRINT("Packet send: "); 
+            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
+            // DEBUG_PRINT("Midi Note:"); 
+            // DEBUG_PRINT(noteOnBuffer[14]); 
+            // DEBUG_PRINT("Note On Channel (HEX):"); 
+            // DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
+            // DEBUG_PRINT("Channel (DEC):"); 
+            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
+            // DEBUG_PRINT("Send note ON"); 
+            // DEBUG_PRINT("Packet send: "); 
             for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
               printHex(noteOnBuffer[i]);Serial.print(" ");
             }
@@ -332,4 +334,3 @@ void muxTwo() {
         }
   }    
 }
-
