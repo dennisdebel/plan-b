@@ -15,6 +15,10 @@ const char* udpIP = "172.20.10.4";
 unsigned int udpPort = 4000;  // udp port 
 
 // Stepper definitions
+const int stepperSpeed = 200; // to reverse directions set to -200 for example
+const float stepperMaxSpeed = 1000.0;
+const float stepperAccel = 50.0;
+
 #define HALFSTEP 8
 
 // Stepper pin definitions
@@ -145,28 +149,28 @@ void setup()
   Serial.begin(115200);
 
   // Stepper motor settings
-  stepper.setMaxSpeed(1000.0);
-  stepper.setAcceleration(50.0);
-  stepper.setSpeed(200);
+  stepper.setMaxSpeed(stepperMaxSpeed); //1000.0
+  stepper.setAcceleration(stepperAccel); //50.0
+  stepper.setSpeed(stepperSpeed); //200
   /* 2048 == 1/2 rotation of the axis.
    * 64 steps per full rotation for the motor, to be multiplied by 64
    * (the reducing factor of the complete motor) --> 64 * 64 = 4096 steps per rotation
    * 
    * At boot, the motor will turn 1/2 rotation clockwise, then 1 turn anti-clockwise.
    */
-  stepper.moveTo(2048);
+  //stepper.moveTo(2048); // TODO remove
     Serial.println("this is setup");
 }
 
 void loop()
 {
   //Change direction when the stepper reaches the target position
-  if (stepper.distanceToGo() == 0) {
-    stepper.moveTo(-stepper.currentPosition());
+  // if (stepper.distanceToGo() == 0) {
+  //   stepper.moveTo(-stepper.currentPosition());
 
-     Serial.println("now is loop");
-  }
-  stepper.run();
+  //    Serial.println("now is loop");
+  // }
+  stepper.run(); // run forever
  
 
   muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
