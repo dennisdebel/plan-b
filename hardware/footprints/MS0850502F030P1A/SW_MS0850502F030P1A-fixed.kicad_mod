@@ -1,0 +1,193 @@
+(footprint "SW_MS0850502F030P1A-fixed"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(property "Reference" "SW1"
+		(at 1.17617 -4.1391 180)
+		(layer "F.SilkS")
+		(uuid "e6b48058-5c5e-4079-a121-b5a51899a19e")
+		(effects
+			(font
+				(size 1.000992 1.000992)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SW_Push_SPDT"
+		(at 10.096455 4.378655 180)
+		(layer "F.Fab")
+		(uuid "401795d0-0bd3-4bf6-bc13-0eaf151fb050")
+		(effects
+			(font
+				(size 1.003126 1.003126)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" "MS0850502F030P1A:SW_MS0850502F030P1A"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b6489552-dd9c-447c-a300-83c9f7f4788b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://www.snapeda.com/parts/MS0850502F030P1A/E-Switch/datasheet/"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "74e0482b-fa16-4f9d-816e-d7f23e9b3967")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Momentary Switch, single pole double throw"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b444f681-a676-48ad-930b-ecb978d0b9a2")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -1.85 -3.2)
+		(end 17.95 -3.2)
+		(stroke
+			(width 0.127)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f10ffd62-551a-4ddd-a008-e7c802726cdd")
+	)
+	(fp_line
+		(start 17.95 3.2)
+		(end -1.85 3.2)
+		(stroke
+			(width 0.127)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6eeb67bf-346b-4bf6-a421-3946be54174a")
+	)
+	(fp_line
+		(start -2.1 -3.5)
+		(end -2.1 3.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "2bc9e67d-2031-4619-9e9e-aa6c94209f00")
+	)
+	(fp_line
+		(start -2.1 3.5)
+		(end 18.25 3.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "1b7b01b0-404e-4137-92be-0144211d35c0")
+	)
+	(fp_line
+		(start 4.75 -3.5)
+		(end -2.1 -3.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ad739655-4bcd-4dc6-b83f-db63644a1332")
+	)
+	(fp_line
+		(start 18.25 -3.5)
+		(end 4.75 -3.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "876bdb81-0a24-4d0f-8854-b8c44622386c")
+	)
+	(fp_line
+		(start 18.25 3.5)
+		(end 18.25 -3.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "541a0221-0068-485e-bbdd-9e9dc5a9e743")
+	)
+	(fp_line
+		(start -1.85 3.2)
+		(end -1.85 -3.2)
+		(stroke
+			(width 0.127)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "265bdcea-1dbc-498b-ad4a-8c2dfb0e4cbd")
+	)
+	(fp_line
+		(start 17.95 -3.2)
+		(end 17.95 3.2)
+		(stroke
+			(width 0.127)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c2427c1c-4df2-491b-8506-a00aa3d107f0")
+	)
+	(pad "1" thru_hole oval
+		(at 0 0)
+		(size 1.8 4.2)
+		(drill oval 0.7 3.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(solder_mask_margin 0.102)
+		(uuid "ed57e06d-73de-464c-8987-a885d5cc8a71")
+	)
+	(pad "2" thru_hole oval
+		(at 16.1 0)
+		(size 1.8 4.2)
+		(drill oval 0.7 3.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(solder_mask_margin 0.102)
+		(uuid "a831b970-9ca6-4418-8503-5394fea7b1db")
+	)
+	(pad "3" thru_hole oval
+		(at 8.8 0)
+		(size 1.8 4.2)
+		(drill oval 0.7 3.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(solder_mask_margin 0.102)
+		(uuid "c899a630-f475-4c8e-be05-b2041be896bf")
+	)
+	(model "/Users/then/Documents/GitHub/plan-b/hardware/footprints/MS0850502F030P1A/MS0850502F030P1A.step"
+		(offset
+			(xyz 3.3 3 3)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
