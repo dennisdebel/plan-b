@@ -1,18 +1,36 @@
+// TODO
+// [x] wifi reconnect on disconnect (esp native function). No reconnect debug messages to save time/cpu cycles.
+// [ ] start mode motors on specific midi message (note on/off) via Udp (https://docs.arduino.cc/retired/library-examples/wifi-library/WiFiUdpSendReceiveString/)
+// [ ] stop mode (when all 16 buttons are pressed "simultaniously" (aka long debounce! 200ms?))
+      // https://forum.arduino.cc/t/concatenate-states-of-inputs/1176595 & https://www.reddit.com/r/arduino/comments/4gv2zp/detecting_two_buttons_clicked_at_the_same_time/
+      // https://forum.arduino.cc/t/array-content-fastest-means-to-verify-whether-all-variables-contain-an-identical-value/968783/15
+      // https://arduino.stackexchange.com/questions/49153/how-can-i-record-a-push-button-sequence-and-store-it-in-an-array 
+// [x] init mode: LED goes on when succesfully connect to wifi hotspot
+// [x] wait mode: after setup() go into "wait mode", after stop go into wait mode...
+// [ ] refactor the mux functions into a class/struct
+// [ ] refactor the code to use enum and case/switch between wait, stop and start mode.
+
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <AccelStepper.h>
 
+// State (1 is start, 0 is wait)
+bool State; // TODO maybe implement a more desciptive with (enum and case/switch) state machine (https://forum.arduino.cc/t/state-machines-a-short-tutorial/580593)
+
 
 // Wifi definitions 
+#define WIFI // uncomment to enable wifi, comment to disable wifi
 const char* ssid = "OtaNew";
 const char* password = "1234567890";
-//#define WIFI // uncomment to enable wifi, comment to disable wifi
+
 
 // UDP definitions
 WiFiUDP Udp;
-const char* udpIP = "172.20.10.4";
+const char* udpIP = "172.20.10.4"; // Change me to your local IP
 unsigned int udpPort = 4000;  // udp port 
+char udpPacketBuffer[255]; //buffer to hold incoming packet
+char adpReplyBuffer[] = "acknowledged";       // a string to send back
 
 // Stepper definitions
 const int stepperSpeed = 500; // to reverse directions set to -200 for example
@@ -84,8 +102,6 @@ void muxTwo();
 void printHex();
 //void moveSteppers();
 
-
-
 // declare mux pins
 const int PIN_VALUE_ONE = D1; // IO read pin mux 1 (COMmon InputOutput pin) // TODO change to..
 const int PIN_VALUE_TWO = D2; // IO read pin mux 2 (COMmon InputOutput pin) // TODO change to..
@@ -113,26 +129,45 @@ int b2 = 0;
 
 void setup()
 {
+  // Start serial
+  pinMode(LED_BUILTIN, OUTPUT); // TODO this might conflict with the MUX
+  digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off when setup is starting (on the wemos d1 mini board, LOW = HIGH and vice versa)
+  Serial.begin(115200);
+  delay(3000); // give us some time
+  Serial.println(" "); // give us some space
+  Serial.println("Entering Setup..");
+  Serial.println(" "); // give us some space
+
+
   #ifdef WIFI
     WiFi.begin(ssid, password);             // Connect to the network
-    DEBUG_PRINT("Connecting to ");
-    DEBUG_PRINT(ssid);
+    Serial.println("Trying to connect to wifi network:");
+    Serial.println(ssid);
+    Serial.println('\n');
   
     int i = 0;
     while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
       delay(1000);
-      DEBUG_PRINT(++i); 
-      DEBUG_PRINT(' ');
+      Serial.println(++i); 
+      Serial.println("Still trying to connect...");
     }
-    DEBUG_PRINT('\n');
-    DEBUG_PRINT("Connection established!");  
-    DEBUG_PRINT("WEMOS Local IP address:\t");
-    DEBUG_PRINT(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
-  
+    Serial.println('\n');
+    Serial.println("Connection established!");  
+    Serial.println("WEMOS Local IP address:\t");
+    Serial.println(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
+    WiFi.setAutoReconnect(true); // Auto reconnect on disconnect (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
+    WiFi.persistent(true); // Keep alive (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
   #endif
   Udp.begin(udpPort);
 
-  // Mux pin settings
+  // Stepper motor settings
+  stepper.setMaxSpeed(stepperMaxSpeed);
+  stepper.setSpeed(stepperSpeed);        
+
+  Serial.println("Setup finished, entering wait mode");
+  State = 0; // Set waitmode
+
+    // Mux pin settings
   pinMode(PIN_VALUE_ONE, INPUT);
   pinMode(PIN_VALUE_TWO, INPUT);
 
@@ -141,38 +176,25 @@ void setup()
   pinMode(PIN_C, OUTPUT);
 
   digitalWrite(PIN_A, LOW);
-  digitalWrite(PIN_B, LOW);
+  digitalWrite(PIN_B, LOW); // PIN_B is connected to D4, the built in LED....this turn on the led...
   digitalWrite(PIN_C, LOW);
-
-  // Start serial
-  Serial.begin(115200);
-
-  // Stepper motor settings
-   stepper.setMaxSpeed(stepperMaxSpeed);
-   stepper.setSpeed(stepperSpeed);        
-  /* 2048 == 1/2 rotation of the axis.
-   * 64 steps per full rotation for the motor, to be multiplied by 64
-   * (the reducing factor of the complete motor) --> 64 * 64 = 4096 steps per rotation
-   * 
-   * At boot, the motor will turn 1/2 rotation clockwise, then 1 turn anti-clockwise.
-   */
-  //stepper.moveTo(2048); // TODO remove
-    Serial.println("this is setup");
 }
 
 void loop()
 {
-  //Change direction when the stepper reaches the target position
-  // if (stepper.distanceToGo() == 0) {
-  //   stepper.moveTo(-stepper.currentPosition());
+  if(State){ //if state == 1, start!
+    Serial.println("Starting!");
+    stepper.runSpeed();
+  //muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
+  //muxTwo(); // function to loop over mux 2 TODO mux must buttonvlaue count 8 < 16
+  
+  //TODO iff all buttons are pressed, set State = 0 and wait.
 
-  //    Serial.println("now is loop");
-  // }
-  stepper.runSpeed();
- 
+  } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
+    Serial.println("Waiting for start command...");
+    delay(100); // TODO this can maybe go...
+  }
 
- //muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
- //muxTwo(); // function to loop over mux 2 TODO mux must buttonvlaue count 8 < 16
 }
 
 //---------------------------------------------------  Helper functions ----------------------------------------------------
@@ -190,7 +212,17 @@ void muxOne() {
       #ifdef DEBUG
         delay(20); // debug delay for readability
       #endif
-
+      
+      // TODO check if all buttons have been pressed...
+      for(int buttonCount = 0; buttonCount < 8; buttonCount++){
+          if(mux0ne_lastState[buttonCount] == 1){ 
+            Serial.println("All buttons are pressed!");
+            //set State to 0
+          }
+          
+      }
+    
+      
       b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
       b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
       b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
@@ -199,8 +231,8 @@ void muxOne() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxOne = buttonConfig[buttonCount][1]; // Look up the note number
-      noteOnBuffer[14] = noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
+      int noteMuxOne    = buttonConfig[buttonCount][1]; // Look up the note number
+      noteOnBuffer[14]  = noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
       noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][2]][1];; // Set the Note on + Channel  
       noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][2]][0]; // Set the Note off + Channel    
@@ -229,7 +261,7 @@ void muxOne() {
             Udp.beginPacket(udpIP, udpPort); 
             Udp.write(noteOffBuffer,16); // send noteOff message
             Udp.endPacket();
-            digitalWrite(LED_BUILTIN, HIGH); // debug LED
+            //digitalWrite(LED_BUILTIN, HIGH); // debug LED
         }
 
         // This if statement will only fire on the rising edge of the button input
@@ -275,8 +307,8 @@ void muxTwo() {
       digitalWrite(PIN_B,b1); // actually set the registers
       digitalWrite(PIN_C,b2); // actually set the registers
 
-      int noteMuxTwo = buttonConfig[buttonCount+8][1]; // Look up the note number
-      noteOnBuffer[14]= noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
+      int noteMuxTwo    = buttonConfig[buttonCount+8][1]; // Look up the note number
+      noteOnBuffer[14]  = noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
       noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
       noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount+7][2]][1]; // Set the Note on + Channel
       noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount+7][2]][0]; // Set the Note off + Channel   // channelLUT[buttonConfig[note][2]][0]
