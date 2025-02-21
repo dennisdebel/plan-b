@@ -29,8 +29,9 @@ const char* password = "1234567890";
 WiFiUDP Udp;
 const char* udpIP = "172.20.10.4"; // Change me to your local IP
 unsigned int udpPort = 4000;  // udp port 
-char udpPacketBuffer[255]; //buffer to hold incoming packet
-char adpReplyBuffer[] = "acknowledged";       // a string to send back
+char udpPacketBuffer[16]; //buffer to hold incoming packet, same size as midi message
+char udpReplyBuffer[] = "acknowledged";       // a string to send back
+void udpListen();
 
 // Stepper definitions
 const int stepperSpeed = 500; // to reverse directions set to -200 for example
@@ -157,8 +158,9 @@ void setup()
     Serial.println(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
     WiFi.setAutoReconnect(true); // Auto reconnect on disconnect (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
     WiFi.persistent(true); // Keep alive (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
+    Udp.begin(udpPort); // starty UDP
   #endif
-  Udp.begin(udpPort);
+ 
 
   // Stepper motor settings
   stepper.setMaxSpeed(stepperMaxSpeed);
@@ -193,6 +195,9 @@ void loop()
   } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
     Serial.println("Waiting for start command...");
     delay(100); // TODO this can maybe go...
+    
+    //Listen for incoming udp packet
+    udpListen();
   }
 
 }
@@ -367,4 +372,31 @@ void muxTwo() {
             #endif
         }
   }    
+}
+
+void udpListen(){
+  int packetSize = Udp.parsePacket();
+
+  if (packetSize) {
+    Serial.print("Received packet of size ");
+    Serial.println(packetSize);
+    Serial.print("From ");
+    IPAddress remoteIp = Udp.remoteIP();
+    Serial.print(remoteIp);
+    Serial.print(", port ");
+    Serial.println(Udp.remotePort());
+    // read the packet into packetBufffer
+    int len = Udp.read(udpPacketBuffer, 16);
+
+    if (len > 0) {
+      udpPacketBuffer[len] = 0;
+    }
+    Serial.println("Contents:");
+    Serial.println(udpPacketBuffer);
+    // send a reply, to the IP address and port that sent us the packet we received
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(udpReplyBuffer);
+    Udp.endPacket();
+  }
+
 }
