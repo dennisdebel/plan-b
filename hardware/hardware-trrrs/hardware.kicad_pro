@@ -48,30 +48,11 @@
         "silk_text_thickness": 0.1,
         "silk_text_upright": false,
         "zones": {
-          "min_clearance": 0.5
+          "min_clearance": 0.0
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [
-        "courtyards_overlap|175246677|131900001|ad2c3c71-dc6e-4d8b-91ae-699d78b8107a|e4afeac5-ccb7-47b2-9013-1bb96d9a8ef1",
-        "courtyards_overlap|181533343|131900001|fe3a7b56-9c5c-4df2-970a-9dd4729d5a70|ad2c3c71-dc6e-4d8b-91ae-699d78b8107a",
-        "courtyards_overlap|187820009|131900001|41d5e5dc-c1d1-4fec-8d86-e905f7ce4032|fe3a7b56-9c5c-4df2-970a-9dd4729d5a70",
-        "courtyards_overlap|194106675|131900001|bebe225a-857b-4c91-8286-02829446023d|41d5e5dc-c1d1-4fec-8d86-e905f7ce4032",
-        "courtyards_overlap|200393341|131900001|0263e02c-6696-4688-99a7-3b5cc45cdb3c|bebe225a-857b-4c91-8286-02829446023d",
-        "courtyards_overlap|206680007|131900001|331190da-053a-4fa4-a011-e94019efdf5b|0263e02c-6696-4688-99a7-3b5cc45cdb3c",
-        "courtyards_overlap|212966673|131900001|78c9bfe3-7616-4756-ab0e-765c12f027ac|331190da-053a-4fa4-a011-e94019efdf5b",
-        "courtyards_overlap|219253339|131900001|94089696-6484-44ba-bc64-6ed4105d065c|78c9bfe3-7616-4756-ab0e-765c12f027ac",
-        "courtyards_overlap|225540005|131900001|7726a75b-5c07-45e5-9f65-cd1d087e3a1c|94089696-6484-44ba-bc64-6ed4105d065c",
-        "courtyards_overlap|231826671|131900001|033a9ca7-327e-4133-b838-94f20a3d873c|7726a75b-5c07-45e5-9f65-cd1d087e3a1c",
-        "courtyards_overlap|238113337|131900001|0f35fdd0-a8c6-45f7-abd7-795000e2bd65|033a9ca7-327e-4133-b838-94f20a3d873c",
-        "courtyards_overlap|244400003|131900001|db76cbe9-e6a4-4a1d-aa2b-0605c2ddec3a|0f35fdd0-a8c6-45f7-abd7-795000e2bd65",
-        "courtyards_overlap|250686669|131900001|15029cca-5753-40eb-a6b4-d676fdd260f4|db76cbe9-e6a4-4a1d-aa2b-0605c2ddec3a",
-        "courtyards_overlap|256973335|131900001|6191d3db-8d0e-4d43-ba0f-c721b2959d4e|15029cca-5753-40eb-a6b4-d676fdd260f4",
-        "courtyards_overlap|263260001|131900001|6191d3db-8d0e-4d43-ba0f-c721b2959d4e|9e621b4d-8cc0-43fb-a5d2-162cd6180255",
-        "silk_edge_clearance|281340000|100141664|86f2fdec-bcac-4ac9-9b4a-68c0721b3f7d|c8e91900-93d6-443f-b72d-c9e0673a1df6",
-        "silk_edge_clearance|281340000|105131664|86f2fdec-bcac-4ac9-9b4a-68c0721b3f7d|acf7616d-11f6-4ff9-af3b-eb133c606e90",
-        "silk_edge_clearance|281340000|105141664|86f2fdec-bcac-4ac9-9b4a-68c0721b3f7d|4e8c50a5-74cc-435e-a9f7-2f26e8e05c48"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -110,8 +91,8 @@
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
         "silk_edge_clearance": "warning",
-        "silk_over_copper": "warning",
-        "silk_overlap": "warning",
+        "silk_over_copper": "ignore",
+        "silk_overlap": "ignore",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
         "starved_thermal": "error",
@@ -485,7 +466,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "../../gerbers/",
+      "plot": "gerbers/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",

@@ -1,4 +1,4 @@
-23800100255257523
+23801840385573649
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -6754,6 +6754,13 @@ three-pin M8
 0
 5
 4
+Connector_Audio
+AUDIO-SMD_STX-3542-5N-G-TR
+
+
+0
+5
+5
 Connector_Audio
 HOOYA-PJ-3505A_C19190915-Jack_3.5mm_PJ31060-I_Horizontal
 PJ31060-I 6pin SMD 3.5mm headphones jack (http://www.china-bsun.com/Product48/1577.html)
