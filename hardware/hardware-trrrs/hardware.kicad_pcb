@@ -76,7 +76,7 @@
 			(mirror no)
 			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "gerbers/")
+			(outputdirectory "production/gerbers/")
 		)
 	)
 	(net 0 "")
@@ -1636,6 +1636,7 @@
 		(path "/ae3e7a99-78b5-4899-af56-8ff6dfdc0a70")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -2167,6 +2168,7 @@
 		(path "/e038c005-b3b8-479a-a047-847bd8642f77")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -3786,6 +3788,7 @@
 		(path "/d19a9c07-9bf3-4603-a08c-a62a8c6f1e99")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -4719,7 +4722,7 @@
 		(path "/7fc18526-3d37-4ddf-a1e7-55b8adfd92ab")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
-		(attr through_hole)
+		(attr through_hole exclude_from_bom dnp)
 		(fp_line
 			(start -1 -1.3)
 			(end 1 -1.3)
@@ -5478,6 +5481,7 @@
 		(path "/e287cc9f-54e1-482c-8a7a-18dd5c6fc828")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -6645,6 +6649,7 @@
 		(path "/b214b706-db46-4035-af83-da61f02b43f5")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -7586,6 +7591,7 @@
 		(path "/80acc7f6-ebdb-4db7-b523-3bbf02c5fac0")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -9331,6 +9337,7 @@
 		(path "/0aeb96c2-0e18-4b13-8420-ce3bc416d5c6")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -10498,6 +10505,7 @@
 		(path "/6c3694d0-0bb1-4b26-bd08-f40b1d99cf77")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -11891,6 +11899,7 @@
 		(path "/20e94a22-f09d-4e25-876d-37cb9e86c5de")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -15602,6 +15611,7 @@
 		(path "/f2c02502-20d4-43e1-9c69-0be7abd3c137")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -15907,6 +15917,7 @@
 		(path "/cbf55e1c-7cb6-487b-8052-6d5b722921f2")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -16848,6 +16859,7 @@
 		(path "/c7d2fb4f-17c5-4a78-a25c-b72578a79cfc")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -17379,6 +17391,7 @@
 		(path "/b5cb3272-b75d-40f6-b841-258f5156d8c1")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -18588,6 +18601,7 @@
 		(path "/1bb090b7-6429-44c0-b233-e4e5d4e480a3")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -18893,6 +18907,7 @@
 		(path "/4eec0c2f-97ad-40fb-9ff2-1d979e2f4d1b")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 3.05 -9.1)
 			(end -0.55 -9.1)
@@ -20060,6 +20075,7 @@
 		(path "/13717c53-555c-4c95-8a8a-ce7bc30fd8b0")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
+		(attr exclude_from_bom dnp)
 		(fp_line
 			(start 1.569 5.219)
 			(end -1.4295 5.219)
@@ -21616,7 +21632,7 @@
 		(path "/38be3084-ddd8-42a8-9d21-6b05420fc1df")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
-		(attr through_hole dnp)
+		(attr through_hole exclude_from_bom dnp)
 		(fp_line
 			(start -1.85 -3.2)
 			(end 17.95 -3.2)
@@ -22456,7 +22472,7 @@
 		(path "/65641d5a-f137-47fb-b8d7-723412164644")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
-		(attr through_hole dnp)
+		(attr through_hole exclude_from_bom dnp)
 		(fp_line
 			(start -1.85 -3.2)
 			(end 17.95 -3.2)
@@ -23296,7 +23312,7 @@
 		(path "/ed4fd677-6431-46eb-ab42-916100313f81")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
-		(attr through_hole dnp)
+		(attr through_hole exclude_from_bom dnp)
 		(fp_line
 			(start -1.85 -3.2)
 			(end 17.95 -3.2)
@@ -23506,7 +23522,7 @@
 		(path "/c754ff7e-ce24-41c5-b5dc-0a5c8796b3aa")
 		(sheetname "Root")
 		(sheetfile "hardware.kicad_sch")
-		(attr through_hole dnp)
+		(attr through_hole exclude_from_bom dnp)
 		(fp_line
 			(start -1.85 -3.2)
 			(end 17.95 -3.2)
