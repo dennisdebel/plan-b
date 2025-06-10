@@ -1,34 +1,37 @@
 // TODO
 // [x] wifi reconnect on disconnect (esp native function). No reconnect debug messages to save time/cpu cycles.
-// [ ] start mode motors on specific midi message (note on/off) via Udp (https://docs.arduino.cc/retired/library-examples/wifi-library/WiFiUdpSendReceiveString/)
-// [ ] stop mode (when all 16 buttons are pressed "simultaniously" (aka long debounce! 200ms?))
+// [x] start mode motors on specific midi message (note on/off) via Udp (https://docs.arduino.cc/retired/library-examples/wifi-library/WiFiUdpSendReceiveString/)
+// [x] stop mode (when all 16 buttons are pressed "simultaniously" (aka long debounce! 200ms?))
       // https://forum.arduino.cc/t/concatenate-states-of-inputs/1176595 & https://www.reddit.com/r/arduino/comments/4gv2zp/detecting_two_buttons_clicked_at_the_same_time/
       // https://forum.arduino.cc/t/array-content-fastest-means-to-verify-whether-all-variables-contain-an-identical-value/968783/15
       // https://arduino.stackexchange.com/questions/49153/how-can-i-record-a-push-button-sequence-and-store-it-in-an-array 
 // [x] init mode: LED goes on when succesfully connect to wifi hotspot
 // [x] wait mode: after setup() go into "wait mode", after stop go into wait mode...
-// [ ] refactor the mux functions into a class/struct
+// [x] refactor the mux function (future: into a class/struct)
 // [ ] refactor the code to use enum and case/switch between wait, stop and start mode.
+// [x] motor does not start again after stop + new start command (fix: needs explicit spped and maxspeed calls every time it runs)
+// [ ] timing of 16 button presses is TOO crucial, it wont trigger if you sequentially hit the buttons
 
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <AccelStepper.h>
 
-// State (1 is start, 0 is wait)
-bool State; // TODO maybe implement a more desciptive with (enum and case/switch) state machine (https://forum.arduino.cc/t/state-machines-a-short-tutorial/580593)
 
+// Starting State 
+bool State; // TODO maybe implement a more desciptive with (enum and case/switch) state machine (https://forum.arduino.cc/t/state-machines-a-short-tutorial/580593)
+//#define STEPPER // Only test stepper 
+#define FULLMODE // Run full code 
 
 // Wifi definitions 
 #define WIFI // uncomment to enable wifi, comment to disable wifi
-const char* ssid = "OtaNew";
-const char* password = "1234567890";
-
+const char* ssid = "TP-LINK_E0D9";
+const char* password = "13402018667";
 
 // UDP definitions
 WiFiUDP Udp;
-const char* udpIP = "172.20.10.4"; // Change me to your local IP
-unsigned int udpPort = 4000;  // udp port 
+const char* udpIP = "172.20.10.4"; // IP to send the Midi notes to
+unsigned int udpPort = 12102;  // udp port 
 char udpPacketBuffer[16]; //buffer to hold incoming packet, same size as midi message
 char udpReplyBuffer[] = "acknowledged";       // a string to send back
 void udpListen();
@@ -97,6 +100,8 @@ uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C
 uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
 
 // Custom functions definitions
+void readMux(int pinValue, int length, int* lastState, int* currentState);
+int countPressed(int* stateArray, int length);
 void muxOneTest();
 void muxOne(); 
 void muxTwo(); 
@@ -111,8 +116,8 @@ const int PIN_B = D4;
 const int PIN_C = D3;                                                       // TODO change to..
 
 // declare button states
-int mux0ne_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1};
-int mux0ne_currentState[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int mux0ne_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1}; // TODO rename 0 to O
+int mux0ne_currentState[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // TODO rename 0 to O
 int muxTwo_lastState[8] = {1, 1, 1, 1, 1, 1, 1, 1};
 int muxTwo_currentState[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int buttonValue[8] = {0,1,2,3,4,5,6,7}; // array/counter for pin numbers // TODO remove this
@@ -123,6 +128,7 @@ unsigned long lastDebounceTimeOne = 0;  // the last time the output pin was togg
 int lastButtonStateTwo = LOW;           // the previous reading from the input pin, mux two
 unsigned long lastDebounceTimeTwo = 0;  // the last time the output pin was toggled, mux two
 unsigned long debounceDelay = 200;      // the debounce time; increase if you get double presses, or place a 100nF capacitor (or larger) from the input pin to ground. Note that this requires a 10K (or larger) resistance in series with the button circuit in order for the capacitor to charge/discharge.
+
 
 int b0 = 0; // channel storage
 int b1 = 0;
@@ -136,7 +142,7 @@ void setup()
   Serial.begin(115200);
   delay(3000); // give us some time
   Serial.println(" "); // give us some space
-  Serial.println("Entering Setup..");
+  Serial.println("Entering Setup...");
   Serial.println(" "); // give us some space
 
 
@@ -144,32 +150,30 @@ void setup()
     WiFi.begin(ssid, password);             // Connect to the network
     Serial.println("Trying to connect to wifi network:");
     Serial.println(ssid);
-    Serial.println('\n');
+    Serial.println(" ");
   
     int i = 0;
     while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
       delay(1000);
-      Serial.println(++i); 
-      Serial.println("Still trying to connect...");
+      Serial.print("Still trying to connect...");
+      Serial.print(++i); 
+      Serial.println(" second(s) elapsed"); 
+      
     }
     Serial.println('\n');
     Serial.println("Connection established!");  
     Serial.println("WEMOS Local IP address:\t");
     Serial.println(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
+    delay(2000); // give us some time to see the IP address
     WiFi.setAutoReconnect(true); // Auto reconnect on disconnect (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
     WiFi.persistent(true); // Keep alive (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
     Udp.begin(udpPort); // starty UDP
   #endif
- 
-
-  // Stepper motor settings
-  stepper.setMaxSpeed(stepperMaxSpeed);
-  stepper.setSpeed(stepperSpeed);        
-
+      
   Serial.println("Setup finished, entering wait mode");
-  State = 0; // Set waitmode
+  State = 0; // Start in Wait State
 
-    // Mux pin settings
+  // Mux pin settings
   pinMode(PIN_VALUE_ONE, INPUT);
   pinMode(PIN_VALUE_TWO, INPUT);
 
@@ -184,22 +188,58 @@ void setup()
 
 void loop()
 {
-  if(State){ //if state == 1, start!
-    Serial.println("Starting!");
-    stepper.runSpeed();
-  //muxOne(); // function to loop over mux 1 TODO mux must buttonvalue count 0 < 8
-  //muxTwo(); // function to loop over mux 2 TODO mux must buttonvlaue count 8 < 16
-  
-  //TODO iff all buttons are pressed, set State = 0 and wait.
+  #ifdef STEPPER
+   stepper.runSpeed();
+  #endif
 
-  } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
-    Serial.println("Waiting for start command...");
-    delay(100); // TODO this can maybe go...
-    
-    //Listen for incoming udp packet
-    udpListen();
-  }
+  #ifdef FULLMODE
+    if(State == 1){ //if state == 1, start!
+      Serial.print("Starting! | ");
+      Serial.print("State: ");
+      Serial.println(State);
+        
+      stepper.setMaxSpeed(stepperMaxSpeed);
+      stepper.setSpeed(stepperSpeed);  
+      stepper.runSpeed();
+      readMux(PIN_VALUE_ONE, 0, mux0ne_lastState, mux0ne_currentState);
+      readMux(PIN_VALUE_TWO, 8, muxTwo_lastState, muxTwo_currentState);
+      
+      #ifdef DEGUG
+        Serial.print("Mux1 states: ");
+        for (int i = 0; i < 8; i++) {
+          Serial.print(mux0ne_currentState[i]);
+          Serial.print(" ");
+        }
+        Serial.println(); delay(50);
 
+        Serial.print("Mux2 states: ");
+        for (int i = 0; i < 8; i++) {
+          Serial.print(muxTwo_currentState[i]);
+          Serial.print(" ");
+        }
+        Serial.println();
+      #endif
+
+      // Count presses
+      int muxOnePressed = countPressed(mux0ne_currentState, 8);
+      int muxTwoPressed = countPressed(muxTwo_currentState, 8);
+
+      if ((muxOnePressed + muxTwoPressed) >= 2) {
+        Serial.println("Two or more buttons pressed in total!");
+        Serial.println("Stopping");
+        stepper.stop(); // Stop the stepper motors
+        State = 0; 
+      }
+
+    } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
+      Serial.println("Waiting for start command...");
+      delay(100);
+      Serial.print("State: ");
+      Serial.println(State); 
+      //Listen for incoming udp packet
+      udpListen();
+    }
+  #endif
 }
 
 //---------------------------------------------------  Helper functions ----------------------------------------------------
@@ -209,169 +249,82 @@ void printHex(uint8_t num) { //print hex values
   sprintf(hexCar, "%02X", num);
   Serial.print(hexCar);
 }
-
-//--------------------------------------------------- Reading the muxes ---------------------------------------------------
-void muxOne() {
-
-  for (int buttonCount = 0; buttonCount < 8; buttonCount++) {
-      #ifdef DEBUG
-        delay(20); // debug delay for readability
-      #endif
-      
-      // TODO check if all buttons have been pressed...
-      for(int buttonCount = 0; buttonCount < 8; buttonCount++){
-          if(mux0ne_lastState[buttonCount] == 1){ 
-            Serial.println("All buttons are pressed!");
-            //set State to 0
-          }
-          
-      }
-    
-      
-      b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
-      b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
-      b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
-
-      digitalWrite(PIN_A,b0); // actually set the registers
-      digitalWrite(PIN_B,b1); // actually set the registers
-      digitalWrite(PIN_C,b2); // actually set the registers
-
-      int noteMuxOne    = buttonConfig[buttonCount][1]; // Look up the note number
-      noteOnBuffer[14]  = noteMuxOne; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
-      noteOffBuffer[14] = noteMuxOne; // modify noteOffBuffer to turn off the played note
-      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount][2]][1];; // Set the Note on + Channel  
-      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount][2]][0]; // Set the Note off + Channel    
-
-      int reading = digitalRead(PIN_VALUE_ONE); // read the mux IO pin
-
-      // read the state of the pushbutton and set a flag if it is low:
-        if (reading == LOW && mux0ne_lastState[buttonCount] == 0)  {
-            mux0ne_lastState[buttonCount] = 1;
-            mux0ne_currentState[buttonCount] = 1;
-            //Send noteOff here
-            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
-            // DEBUG_PRINT("Midi Note:"); 
-            // DEBUG_PRINT(noteOffBuffer[14]); 
-            // DEBUG_PRINT("Note Off Channel (HEX):"); 
-            // DEBUG_PRINT(noteOffBuffer[15]); 
-            // DEBUG_PRINT("Channel (DEC):"); 
-            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            // DEBUG_PRINT("Send note OFF"); 
-            // DEBUG_PRINT("Packet send: "); 
-            for(int i=0; i<sizeof(noteOffBuffer); i++){ //debug the note on message
-              printHex(noteOffBuffer[i]);Serial.print(" ");
-            }
-            Serial.println(); //attempt to de-uglify the packet printing
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket(udpIP, udpPort); 
-            Udp.write(noteOffBuffer,16); // send noteOff message
-            Udp.endPacket();
-            //digitalWrite(LED_BUILTIN, HIGH); // debug LED
-        }
-
-        // This if statement will only fire on the rising edge of the button input
-        if (reading == HIGH && mux0ne_lastState[buttonCount] == 1)  {
-            // reset the button low flag
-            mux0ne_lastState[buttonCount] = 0;
-            // Send noteOn here:
-            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
-            // DEBUG_PRINT("Midi Note:"); 
-            // DEBUG_PRINT(noteOnBuffer[14]); 
-            // DEBUG_PRINT("Note On Channel (HEX):"); 
-            // DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
-            // DEBUG_PRINT("Channel (DEC):"); 
-            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            // DEBUG_PRINT("Send note ON"); 
-            // DEBUG_PRINT("Packet send: "); 
-            for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
-              printHex(noteOnBuffer[i]);Serial.print(" ");
-            }
-            Serial.println(); //attempt to de-uglify the packet printing
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket(udpIP, udpPort); 
-            Udp.write(noteOnBuffer,16); // send noteOn message
-            Udp.endPacket();
-            #ifdef DEBUG
-              digitalWrite(LED_BUILTIN, LOW); // debug LED
-            #endif
-        }
-  }    
+int countPressed(int* stateArray, int length) {
+  int count = 0;
+  for (int i = 0; i < length; i++) {
+    if (stateArray[i] == 1) count++;
+  }
+  return count;
 }
+//--------------------------------------------------- Reading the muxes ---------------------------------------------------
+void readMux(
+  int valuePin,
+  int startIndex,
+  int lastState[],
+  int currentState[]
+) {
+
+  // Reset current state to zero before reading new button states
+  for (int i = 0; i < 8; i++) {
+    currentState[i] = 0;
+  }
+
+  for (int i = 0; i < 8; i++) {
+    int muxIndex = startIndex + i;
+
+    b0 = bitRead(i, 0);
+    b1 = bitRead(i, 1);
+    b2 = bitRead(i, 2);
+
+    digitalWrite(PIN_A, b0);
+    digitalWrite(PIN_B, b1);
+    digitalWrite(PIN_C, b2);
+
+    int note = buttonConfig[muxIndex][1];
+    int channel = buttonConfig[muxIndex][2];
+
+    noteOnBuffer[14]  = note;
+    noteOffBuffer[14] = note;
+    noteOnBuffer[15]  = channelLUT[channel][1];
+    noteOffBuffer[15] = channelLUT[channel][0];
+
+    int reading = digitalRead(valuePin);
+
+    if (reading == LOW && lastState[i] == 0) { // note OFF (so reset state here?)
+      lastState[i] = 1; 
+      currentState[i] = 1;
+
+      for (int j = 0; j < sizeof(noteOffBuffer); j++) {
+        printHex(noteOffBuffer[j]);
+        Serial.print(" ");
+      }
+      Serial.println();
+
+      Udp.beginPacket(udpIP, udpPort);
+      Udp.write(noteOffBuffer, 16);
+      Udp.endPacket();
+    }
+
+    else if (reading == HIGH && lastState[i] == 1) { // note ON
+      lastState[i] = 0;
+      currentState[i] = 0;  // ✅ <-- ADD THIS LINE!
+
+      for (int j = 0; j < sizeof(noteOnBuffer); j++) {
+        printHex(noteOnBuffer[j]);
+        Serial.print(" ");
+      }
+      Serial.println();
+
+      Udp.beginPacket(udpIP, udpPort);
+      Udp.write(noteOnBuffer, 16);
+      Udp.endPacket();
+    }
+
+    else if (reading == HIGH) {
+      currentState[i] = 0;  // ✅ <-- ALSO HANDLE NO CHANGE CASE // TODO THIS DOESNT WORK
+    }
+  }
   
-void muxTwo() {
-   for (int buttonCount = 0; buttonCount < 8; buttonCount++) {  
-      #ifdef DEBUG
-        delay(20); // debug delay for readability
-      #endif
-
-      b0 = bitRead(buttonCount,0); // convert buttonCount integer to bits and assign the first bit to the variable b0
-      b1 = bitRead(buttonCount,1); // convert buttonCount integer to bits and assign the second bit to the variable b1
-      b2 = bitRead(buttonCount,2); // convert buttonCount integer to bits and assign the last bit to the variable b2
-
-      digitalWrite(PIN_A,b0); // actually set the registers
-      digitalWrite(PIN_B,b1); // actually set the registers
-      digitalWrite(PIN_C,b2); // actually set the registers
-
-      int noteMuxTwo    = buttonConfig[buttonCount+8][1]; // Look up the note number
-      noteOnBuffer[14]  = noteMuxTwo; // modify position 14 (0-15) of the noteOnBuffer to the currently pressed button
-      noteOffBuffer[14] = noteMuxTwo; // modify noteOffBuffer to turn off the played note
-      noteOnBuffer[15]  = channelLUT[buttonConfig[buttonCount+7][2]][1]; // Set the Note on + Channel
-      noteOffBuffer[15] = channelLUT[buttonConfig[buttonCount+7][2]][0]; // Set the Note off + Channel   // channelLUT[buttonConfig[note][2]][0]
-
-      int reading = digitalRead(PIN_VALUE_TWO); // read the mux IO pin
-
-      // read the state of the pushbutton and set a flag if it is low:
-        if (reading == LOW && muxTwo_lastState[buttonCount] == 0)  {
-            muxTwo_lastState[buttonCount] = 1;
-            muxTwo_currentState[buttonCount] = 1;
-          //Send noteOff here
-            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("released"); 
-            // DEBUG_PRINT("Midi Note:"); 
-            // DEBUG_PRINT(noteOffBuffer[14]); 
-            // DEBUG_PRINT("Note Off Channel (HEX):"); 
-            // DEBUG_PRINT(noteOffBuffer[15]); 
-            // DEBUG_PRINT("Channel (DEC):"); 
-            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            // DEBUG_PRINT("Send note OFF"); 
-            // DEBUG_PRINT("Packet send: "); 
-            for(int i=0; i<sizeof(noteOffBuffer); i++){ //debug the note on message
-              printHex(noteOffBuffer[i]);Serial.print(" ");
-            }
-            Serial.println(); //attempt to de-uglify the packet printing
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket(udpIP, udpPort); 
-            Udp.write(noteOffBuffer,16); // send noteOff message
-            Udp.endPacket();
-            digitalWrite(LED_BUILTIN, HIGH); // debug LED
-        }
-
-        // This if statement will only fire on the rising edge of the button input
-        if (reading == HIGH && muxTwo_lastState[buttonCount] == 1)  {
-            // reset the button low flag
-            muxTwo_lastState[buttonCount] = 0;
-            // Send noteOn here:
-            // DEBUG_PRINT("button:"); DEBUG_PRINT(buttonCount); DEBUG_PRINT("pressed"); 
-            // DEBUG_PRINT("Midi Note:"); 
-            // DEBUG_PRINT(noteOnBuffer[14]); 
-            // DEBUG_PRINT("Note On Channel (HEX):"); 
-            // DEBUG_PRINT(noteOnBuffer[15]); //ah hij stuurt noteOff channel dus [0] ipv [1]
-            // DEBUG_PRINT("Channel (DEC):"); 
-            // DEBUG_PRINT(buttonConfig[buttonCount][2]);
-            // DEBUG_PRINT("Send note ON"); 
-            // DEBUG_PRINT("Packet send: "); 
-            for(int i=0; i<sizeof(noteOnBuffer); i++){ //debug the note on message
-              printHex(noteOnBuffer[i]);Serial.print(" ");
-            }
-            Serial.println(); //attempt to de-uglify the packet printing
-            // send udp packet to the IP address (broadcast ip 255.255.255.255 doesnt seem to work in my setup)
-            Udp.beginPacket(udpIP, udpPort); 
-            Udp.write(noteOnBuffer,16); // send noteOn message
-            Udp.endPacket();
-            #ifdef DEBUG
-              digitalWrite(LED_BUILTIN, LOW); // debug LED
-            #endif
-        }
-  }    
 }
 
 void udpListen(){
@@ -388,15 +341,10 @@ void udpListen(){
     // read the packet into packetBufffer
     int len = Udp.read(udpPacketBuffer, 16);
 
-    if (len > 0) {
-      udpPacketBuffer[len] = 0;
-    }
-    Serial.println("Contents:");
-    Serial.println(udpPacketBuffer);
-    // send a reply, to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(udpReplyBuffer);
-    Udp.endPacket();
+  if ((udpPacketBuffer[13] == 0x00) && (udpPacketBuffer[14] == 0x7F) && (udpPacketBuffer[15] == 0x84)){  
+    Serial.println("starting (from udp)!");
+    State = 1; // set PCB in action mode
   }
-
+    
+  }
 }
