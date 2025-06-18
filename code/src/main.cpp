@@ -1,3 +1,5 @@
+//====== latest code 9jun 20:38 pm ==== nog 1 bug en geen failsafe
+
 // TODO
 // [x] wifi reconnect on disconnect (esp native function). No reconnect debug messages to save time/cpu cycles.
 // [x] start mode motors on specific midi message (note on/off) via Udp (https://docs.arduino.cc/retired/library-examples/wifi-library/WiFiUdpSendReceiveString/)
@@ -9,8 +11,10 @@
 // [x] wait mode: after setup() go into "wait mode", after stop go into wait mode...
 // [x] refactor the mux function (future: into a class/struct)
 // [ ] refactor the code to use enum and case/switch between wait, stop and start mode.
-// [x] motor does not start again after stop + new start command (fix: needs explicit spped and maxspeed calls every time it runs)
+// [ ] motor does not start again after stop + new start command
 // [ ] timing of 16 button presses is TOO crucial, it wont trigger if you sequentially hit the buttons
+// [ ] if button 16 ...0 ...
+
 
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
@@ -23,15 +27,20 @@ bool State; // TODO maybe implement a more desciptive with (enum and case/switch
 //#define STEPPER // Only test stepper 
 #define FULLMODE // Run full code 
 
+// Hotfix for button 0 (the 'stop' channel..)
+unsigned long startTime;
+boolean timing;
+unsigned long timeOut = 10000; // ten seconds
+
 // Wifi definitions 
 #define WIFI // uncomment to enable wifi, comment to disable wifi
-const char* ssid = "TP-LINK_E0D9";
-const char* password = "13402018667";
+const char* ssid = "";
+const char* password = "";
 
 // UDP definitions
 WiFiUDP Udp;
-const char* udpIP = "172.20.10.4"; // IP to send the Midi notes to
-unsigned int udpPort = 12102;  // udp port 
+const char* udpIP = "192.168.69.1"; // IP to send the Midi notes to
+unsigned int udpPort = 12101;  // udp port 
 char udpPacketBuffer[16]; //buffer to hold incoming packet, same size as midi message
 char udpReplyBuffer[] = "acknowledged";       // a string to send back
 void udpListen();
@@ -53,22 +62,22 @@ AccelStepper stepper(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 // Button config (user variables)  
 int buttonConfig[16][3] = {
-  {/* BUTTON NUMBER */ 0,  /* NOTE NUMBER */ 36, /* CHANNEL NUMBER */ 1 }, 
-  {/* BUTTON NUMBER */ 1,  /* NOTE NUMBER */ 37, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 2,  /* NOTE NUMBER */ 38, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 3,  /* NOTE NUMBER */ 39, /* CHANNEL NUMBER */ 4 }, 
-  {/* BUTTON NUMBER */ 4,  /* NOTE NUMBER */ 40, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 5,  /* NOTE NUMBER */ 41, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 6,  /* NOTE NUMBER */ 42, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 7,  /* NOTE NUMBER */ 43, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 8,  /* NOTE NUMBER */ 44, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 9,  /* NOTE NUMBER */ 45, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 10, /* NOTE NUMBER */ 46, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 11, /* NOTE NUMBER */ 47, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 12, /* NOTE NUMBER */ 48, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 13, /* NOTE NUMBER */ 49, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 14, /* NOTE NUMBER */ 50, /* CHANNEL NUMBER */ 1 },
-  {/* BUTTON NUMBER */ 15, /* NOTE NUMBER */ 51, /* CHANNEL NUMBER */ 1 },
+  {/* BUTTON NUMBER */ 0,  /* NOTE NUMBER */ 49, /* CHANNEL NUMBER */ 5 }, 
+  {/* BUTTON NUMBER */ 1,  /* NOTE NUMBER */ 46, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 2,  /* NOTE NUMBER */ 44, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 3,  /* NOTE NUMBER */ 42, /* CHANNEL NUMBER */ 5 }, 
+  {/* BUTTON NUMBER */ 4,  /* NOTE NUMBER */ 39, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 5,  /* NOTE NUMBER */ 37, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 6,  /* NOTE NUMBER */ 34, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 7,  /* NOTE NUMBER */ 32, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 8,  /* NOTE NUMBER */ 30, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 9,  /* NOTE NUMBER */ 27, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 10, /* NOTE NUMBER */ 25, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 11, /* NOTE NUMBER */ 22, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 12, /* NOTE NUMBER */ 20, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 13, /* NOTE NUMBER */ 18, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 14, /* NOTE NUMBER */ 15, /* CHANNEL NUMBER */ 5 },
+  {/* BUTTON NUMBER */ 15, /* NOTE NUMBER */ 13, /* CHANNEL NUMBER */ 5 },
 };
 
 int channelLUT[17][2] = { // noteOff/noteOn Channel look up table. Format: [0][0] = noteOff channel 1, [0][1] noteOn channel 1
@@ -98,7 +107,8 @@ int noteOffChannel = 128; //channel 0 noteoff
 // Packet buffer definitions
 uint8_t noteOnBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x24, 0x90};
 uint8_t noteOffBuffer[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x00, 0x24, 0x80};
-
+uint8_t allNotesOff[16] = {0x2F, 0x6D, 0x69, 0x64, 0x69, 0x00, 0x00, 0x00, 0x2C, 0x6D, 0x00, 0x00, 0x00, 0x64, 0x00, 0x94}; // All notes off packet
+                    
 // Custom functions definitions
 void readMux(int pinValue, int length, int* lastState, int* currentState);
 int countPressed(int* stateArray, int length);
@@ -128,7 +138,6 @@ unsigned long lastDebounceTimeOne = 0;  // the last time the output pin was togg
 int lastButtonStateTwo = LOW;           // the previous reading from the input pin, mux two
 unsigned long lastDebounceTimeTwo = 0;  // the last time the output pin was toggled, mux two
 unsigned long debounceDelay = 200;      // the debounce time; increase if you get double presses, or place a 100nF capacitor (or larger) from the input pin to ground. Note that this requires a 10K (or larger) resistance in series with the button circuit in order for the capacitor to charge/discharge.
-
 
 int b0 = 0; // channel storage
 int b1 = 0;
@@ -194,12 +203,17 @@ void loop()
 
   #ifdef FULLMODE
     if(State == 1){ //if state == 1, start!
-      Serial.print("Starting! | ");
-      Serial.print("State: ");
-      Serial.println(State);
-        
+      // Serial.print("Starting! | ");
+      // Serial.print("State: ");
+      // Serial.println(State);
+      
+      // start timer for off button 0
+      startTime = millis();
+      timing = true;
+
       stepper.setMaxSpeed(stepperMaxSpeed);
       stepper.setSpeed(stepperSpeed);  
+      stepper.enableOutputs(); // Reconnect power to the stepper motors
       stepper.runSpeed();
       readMux(PIN_VALUE_ONE, 0, mux0ne_lastState, mux0ne_currentState);
       readMux(PIN_VALUE_TWO, 8, muxTwo_lastState, muxTwo_currentState);
@@ -221,28 +235,53 @@ void loop()
       #endif
 
       // Count presses
-      int muxOnePressed = countPressed(mux0ne_currentState, 8);
-      int muxTwoPressed = countPressed(muxTwo_currentState, 8);
+      //int muxOnePressed = countPressed(mux0ne_currentState, 8);
+      //int muxTwoPressed = countPressed(muxTwo_currentState, 8);
+      
+      // if button 0 is pressed, stop everything, but ignore this the first 10 seconds of running:
+      if (timing == true){
+        if (millis() - startTime >= timeOut){ //if current time - startTime is bigger than time out, listen to button 0
+          if(mux0ne_currentState[0] == 1){
+            //Serial.println("Two or more buttons pressed in total!");
+            Serial.println("Stopping");
+            stepper.stop(); // Stop the stepper motors
+            stepper.disableOutputs(); // Reconnect power to the stepper motors
 
-      if ((muxOnePressed + muxTwoPressed) >= 2) {
-        Serial.println("Two or more buttons pressed in total!");
-        Serial.println("Stopping");
-        stepper.stop(); // Stop the stepper motors
-        State = 0; 
+            //Send ALL notes off
+            Udp.beginPacket(udpIP, udpPort);
+            Udp.write(allNotesOff, 16);
+            Udp.endPacket();
+
+            State = 0; 
+          }
+        }
       }
+      // if ((muxOnePressed + muxTwoPressed) >= 2) {
+      //   Serial.println("Two or more buttons pressed in total!");
+      //   Serial.println("Stopping");
+      //   stepper.stop(); // Stop the stepper motors
+      //   stepper.disableOutputs(); // Reconnect power to the stepper motors
+
+      //   //Send ALL notes off
+      //   Udp.beginPacket(udpIP, udpPort);
+      //   Udp.write(allNotesOff, 16);
+      //   Udp.endPacket();
+
+      //   State = 0; 
+      // }
 
     } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
-      Serial.println("Waiting for start command...");
-      delay(100);
-      Serial.print("State: ");
-      Serial.println(State); 
+      // Serial.println("Waiting for start command..."); // TODO remove
+      // delay(100); // this messes with udp receive...duh
+      // Serial.print("State: ");
+      // Serial.println(State); 
       //Listen for incoming udp packet
       udpListen();
     }
   #endif
 }
 
-//---------------------------------------------------  Helper functions ----------------------------------------------------
+//buja!!! ---------------------------------------------------  Helper functions ----------------------------------------------------
 
 void printHex(uint8_t num) { //print hex values
   char hexCar[3];
@@ -294,11 +333,12 @@ void readMux(
       lastState[i] = 1; 
       currentState[i] = 1;
 
-      for (int j = 0; j < sizeof(noteOffBuffer); j++) {
-        printHex(noteOffBuffer[j]);
-        Serial.print(" ");
-      }
-      Serial.println();
+      // for (int j = 0; j < sizeof(noteOffBuffer); j++) {
+      //   printHex(noteOffBuffer[j]);
+      //   Serial.print(" ");
+      // }
+      // Serial.println();
+
 
       Udp.beginPacket(udpIP, udpPort);
       Udp.write(noteOffBuffer, 16);
@@ -309,11 +349,11 @@ void readMux(
       lastState[i] = 0;
       currentState[i] = 0;  // ✅ <-- ADD THIS LINE!
 
-      for (int j = 0; j < sizeof(noteOnBuffer); j++) {
-        printHex(noteOnBuffer[j]);
-        Serial.print(" ");
-      }
-      Serial.println();
+      // for (int j = 0; j < sizeof(noteOnBuffer); j++) {
+      //   printHex(noteOnBuffer[j]);
+      //   Serial.print(" ");
+      // }
+      // Serial.println();
 
       Udp.beginPacket(udpIP, udpPort);
       Udp.write(noteOnBuffer, 16);
@@ -339,7 +379,7 @@ void udpListen(){
     Serial.print(", port ");
     Serial.println(Udp.remotePort());
     // read the packet into packetBufffer
-    int len = Udp.read(udpPacketBuffer, 16);
+    //int len = Udp.read(udpPacketBuffer, 16);
 
   if ((udpPacketBuffer[13] == 0x00) && (udpPacketBuffer[14] == 0x7F) && (udpPacketBuffer[15] == 0x84)){  
     Serial.println("starting (from udp)!");
