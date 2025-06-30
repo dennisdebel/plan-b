@@ -34,8 +34,8 @@ unsigned long timeOut = 10000; // ten seconds
 
 // Wifi definitions 
 #define WIFI // uncomment to enable wifi, comment to disable wifi
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "TP-LINK_E0D9";
+const char* password = "13402018667";
 
 // UDP definitions
 WiFiUDP Udp;
@@ -181,6 +181,8 @@ void setup()
       
   Serial.println("Setup finished, entering wait mode");
   State = 0; // Start in Wait State
+  // start timer for to ignore stop button the first 10 seconds
+  startTime = millis();
 
   // Mux pin settings
   pinMode(PIN_VALUE_ONE, INPUT);
@@ -207,8 +209,7 @@ void loop()
       // Serial.print("State: ");
       // Serial.println(State);
       
-      // start timer for off button 0
-      startTime = millis();
+      // start timer for to ignore stop button the first 10 seconds
       timing = true;
 
       stepper.setMaxSpeed(stepperMaxSpeed);
@@ -241,7 +242,7 @@ void loop()
       // if button 0 is pressed, stop everything, but ignore this the first 10 seconds of running:
       if (timing == true){
         if (millis() - startTime >= timeOut){ //if current time - startTime is bigger than time out, listen to button 0
-          if(mux0ne_currentState[0] == 1){
+          if(mux0ne_currentState[4] == 1){ //this was button 0 but aparently mine is connected to button 4?!?!? CONFIG
             //Serial.println("Two or more buttons pressed in total!");
             Serial.println("Stopping");
             stepper.stop(); // Stop the stepper motors
@@ -271,6 +272,7 @@ void loop()
       // }
 
     } else { // Enter WAIT MODE, if state is 0, wait for udp start command (noteOn/noteOff)
+
       // Serial.println("Waiting for start command..."); // TODO remove
       // delay(100); // this messes with udp receive...duh
       // Serial.print("State: ");
@@ -346,9 +348,12 @@ void readMux(
     }
 
     else if (reading == HIGH && lastState[i] == 1) { // note ON
+      Serial.print("Button pressed: ");
+      Serial.println(i);
       lastState[i] = 0;
-      currentState[i] = 0;  // ✅ <-- ADD THIS LINE!
+      currentState[i] = 0;  
 
+      //debug TODO needs to go
       // for (int j = 0; j < sizeof(noteOnBuffer); j++) {
       //   printHex(noteOnBuffer[j]);
       //   Serial.print(" ");
@@ -361,7 +366,7 @@ void readMux(
     }
 
     else if (reading == HIGH) {
-      currentState[i] = 0;  // ✅ <-- ALSO HANDLE NO CHANGE CASE // TODO THIS DOESNT WORK
+      currentState[i] = 0;  //  ALSO HANDLE NO CHANGE CASE // TODO THIS DOESNT WORK
     }
   }
   
@@ -379,7 +384,7 @@ void udpListen(){
     Serial.print(", port ");
     Serial.println(Udp.remotePort());
     // read the packet into packetBufffer
-    //int len = Udp.read(udpPacketBuffer, 16);
+    Udp.read(udpPacketBuffer, 16);
 
   if ((udpPacketBuffer[13] == 0x00) && (udpPacketBuffer[14] == 0x7F) && (udpPacketBuffer[15] == 0x84)){  
     Serial.println("starting (from udp)!");
