@@ -161,7 +161,7 @@ void setup()
     Serial.println(ssid);
     Serial.println(" ");
   
-    int i = 0;
+    int i = 0; // TODO is this ok here???
     while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
       delay(1000);
       Serial.print("Still trying to connect...");
@@ -176,7 +176,7 @@ void setup()
     delay(2000); // give us some time to see the IP address
     WiFi.setAutoReconnect(true); // Auto reconnect on disconnect (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
     WiFi.persistent(true); // Keep alive (https://randomnerdtutorials.com/solved-reconnect-esp8266-nodemcu-to-wifi/)
-    Udp.begin(udpPort); // starty UDP
+    Udp.begin(udpPort); // start UDP
   #endif
       
   Serial.println("Setup finished, entering wait mode");
@@ -254,6 +254,7 @@ void loop()
             Udp.endPacket();
 
             State = 0; 
+            Udp.begin(udpPort); // start UDP (again) to prevent ghost buffer (prevents buffering multiple start packages) NEW 20.7.2025 
           }
         }
       }
@@ -373,6 +374,7 @@ void readMux(
 }
 
 void udpListen(){
+  // TODO when two top packets are send, you also need to press stop two times...
   int packetSize = Udp.parsePacket();
 
   if (packetSize) {
@@ -389,6 +391,7 @@ void udpListen(){
   if ((udpPacketBuffer[13] == 0x00) && (udpPacketBuffer[14] == 0x7F) && (udpPacketBuffer[15] == 0x84)){  
     Serial.println("starting (from udp)!");
     State = 1; // set PCB in action mode
+    Udp.stop(); // Prevent 'ghost' buffer issues (prevents buffering multiple start packages) NEW 20.7.2025
   }
     
   }
